@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { searchPlayer, getProfile, getActivityHistory, getPGCR, getLinkedProfiles, getD1Profile, getD1ActivityHistory, getD1PGCR, BungieProfile, RaidActivity, FireteamMember } from './utils/bungieApi';
-import { getRaidName, getRaidOrigin, CLASS_NAMES } from './utils/raidDefinitions';
+import { getRaidName, getRaidOrigin, getActivityName, getActivityType, CLASS_NAMES } from './utils/raidDefinitions';
 import RaidTimeline from './components/RaidTimeline';
 import RaidMemories from './components/RaidMemories';
 
@@ -153,6 +153,56 @@ export default function App() {
     });
   }, []);
 
+  // Helper: fetch D2 activities for a given mode (4=raids, 82=dungeons)
+  const fetchD2Activities = useCallback(async (
+    sp: SelectableProfile,
+    characterId: string,
+    mode: string,
+    allRaids: RaidActivity[]
+  ) => {
+    let page = 0;
+    let hasMore = true;
+    while (hasMore) {
+      const history = await getActivityHistory(
+        sp.membershipType, sp.membershipId, characterId, page, 250, parseInt(mode)
+      );
+      if (!history.Response?.activities || history.Response.activities.length === 0) {
+        hasMore = false;
+        break;
+      }
+      for (const act of history.Response.activities) {
+        const directorHash = act.activityDetails?.directorActivityHash || 0;
+        const name = getActivityName(directorHash);
+        if (!directorHash || name.startsWith('Unknown')) continue;
+        const isCompleted = act.values?.completed?.basic?.value === 1 ||
+                            act.values?.completionReason?.basic?.value === 0;
+        const type = getActivityType(directorHash);
+        allRaids.push({
+          instanceId: act.activityDetails.instanceId,
+          period: act.period,
+          activityHash: act.activityDetails.referenceId,
+          activityName: name,
+          directorActivityHash: directorHash,
+          origin: type === 'dungeon' ? 'd2' : getRaidOrigin(directorHash),
+          activityType: type === 'unknown' ? 'raid' : type,
+          mode: act.activityDetails.mode,
+          isCompleted,
+          kills: act.values?.kills?.basic?.value || 0,
+          deaths: act.values?.deaths?.basic?.value || 0,
+          assists: act.values?.assists?.basic?.value || 0,
+          timePlayedSeconds: act.values?.timePlayedSeconds?.basic?.value || 0,
+          completionReason: act.values?.completionReason?.basic?.value || -1,
+          standing: act.values?.standing?.basic?.value || 0,
+          playerCount: act.values?.playerCount?.basic?.value || 0,
+          fireteamMembers: [],
+          isFirstClear: false,
+        });
+      }
+      page++;
+      if (page > 20) hasMore = false;
+    }
+  }, []);
+
   const handleViewRaids = useCallback(async () => {
     if (selectedKeys.size === 0) {
       setError('Select at least one profile.');
@@ -170,50 +220,16 @@ export default function App() {
     try {
       for (const sp of selected) {
         if (sp.game === 'd2') {
-          // --- Destiny 2 raids ---
+          // --- Destiny 2 raids & dungeons ---
           const { characters } = await getProfile(sp.membershipType, sp.membershipId);
           for (const char of characters) {
+            // Fetch raids (mode 4)
             setProgress(`Loading D2 raids (${sp.platformName}, ${CLASS_NAMES[char.classType] || 'Character'})...`);
+            await fetchD2Activities(sp, char.characterId, '4', allRaids);
 
-            let page = 0;
-            let hasMore = true;
-            while (hasMore) {
-              const history = await getActivityHistory(
-                sp.membershipType, sp.membershipId, char.characterId, page, 250
-              );
-              if (!history.Response?.activities || history.Response.activities.length === 0) {
-                hasMore = false;
-                break;
-              }
-              for (const act of history.Response.activities) {
-                const directorHash = act.activityDetails?.directorActivityHash || 0;
-                const raidName = getRaidName(directorHash);
-                if (!directorHash || raidName.startsWith('Unknown')) continue;
-                const isCompleted = act.values?.completed?.basic?.value === 1 ||
-                                    act.values?.completionReason?.basic?.value === 0;
-                allRaids.push({
-                  instanceId: act.activityDetails.instanceId,
-                  period: act.period,
-                  activityHash: act.activityDetails.referenceId,
-                  activityName: raidName,
-                  directorActivityHash: directorHash,
-                  origin: getRaidOrigin(directorHash),
-                  mode: act.activityDetails.mode,
-                  isCompleted,
-                  kills: act.values?.kills?.basic?.value || 0,
-                  deaths: act.values?.deaths?.basic?.value || 0,
-                  assists: act.values?.assists?.basic?.value || 0,
-                  timePlayedSeconds: act.values?.timePlayedSeconds?.basic?.value || 0,
-                  completionReason: act.values?.completionReason?.basic?.value || -1,
-                  standing: act.values?.standing?.basic?.value || 0,
-                  playerCount: act.values?.playerCount?.basic?.value || 0,
-                  fireteamMembers: [],
-                  isFirstClear: false,
-                });
-              }
-              page++;
-              if (page > 20) hasMore = false;
-            }
+            // Fetch dungeons (mode 82)
+            setProgress(`Loading D2 dungeons (${sp.platformName}, ${CLASS_NAMES[char.classType] || 'Character'})...`);
+            await fetchD2Activities(sp, char.characterId, '82', allRaids);
           }
         } else {
           // --- Destiny 1 raids ---
@@ -247,6 +263,7 @@ export default function App() {
                     activityName: raidName,
                     directorActivityHash: activityHash,
                     origin: getRaidOrigin(activityHash),
+                    activityType: 'raid',
                     mode: 4,
                     isCompleted,
                     kills: act.values?.kills?.basic?.value || 0,

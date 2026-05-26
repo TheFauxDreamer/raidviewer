@@ -85,6 +85,9 @@ export default function RaidTimeline({ raids, onLoadFireteam }: Props) {
                 <div className="card-title-group">
                   <h3 className="raid-name">
                     {raid.activityName}
+                    {raid.activityType === 'dungeon' && (
+                      <span className="origin-badge dungeon-badge">Dungeon</span>
+                    )}
                     {raid.origin === 'd1-reprised' && (
                       <span className="origin-badge">Reprised</span>
                     )}

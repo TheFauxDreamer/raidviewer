@@ -25,6 +25,7 @@ export interface RaidActivity {
   activityName: string;
   directorActivityHash: number;
   origin: 'd2' | 'd1-reprised' | 'd1' | 'unknown';
+  activityType: 'raid' | 'dungeon' | 'unknown';
   mode: number;
   isCompleted: boolean;
   kills: number;
@@ -101,10 +102,11 @@ export async function getActivityHistory(
   membershipId: string,
   characterId: string,
   page: number = 0,
-  count: number = 250
+  count: number = 250,
+  mode: number = 4
 ): Promise<any> {
   const res = await fetch(
-    `${API_BASE}?action=activityHistory&membershipType=${membershipType}&membershipId=${membershipId}&characterId=${characterId}&count=${count}&mode=4&page=${page}`
+    `${API_BASE}?action=activityHistory&membershipType=${membershipType}&membershipId=${membershipId}&characterId=${characterId}&count=${count}&mode=${mode}&page=${page}`
   );
   return res.json();
 }

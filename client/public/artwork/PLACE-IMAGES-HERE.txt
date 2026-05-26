@@ -1,8 +1,8 @@
-Place your raid artwork images here.
+Place your raid & dungeon artwork images here.
 
-File naming: use the raid slug + .jpg extension.
+File naming: use the activity slug + .jpg extension.
 
-Example:
+RAIDS:
   last-wish.jpg
   deep-stone-crypt.jpg
   vault-of-glass.jpg
@@ -18,5 +18,17 @@ Example:
   scourge-of-the-past.jpg
   crown-of-sorrow.jpg
   wrath-of-the-machine.jpg
+
+DUNGEONS:
+  shattered-throne.jpg
+  pit-of-heresy.jpg
+  prophecy.jpg
+  grasp-of-avarice.jpg
+  duality.jpg
+  spire-of-the-watcher.jpg
+  ghosts-of-the-deep.jpg
+  warlords-ruin.jpg
+  vespers-host.jpg
+  sundered-doctrine.jpg
 
 Recommended: 1920x1080 JPG, ~300-500KB each.

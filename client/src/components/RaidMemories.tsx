@@ -13,6 +13,7 @@ interface RaidMemory {
   firstClearDate: string;
   instanceId: string;
   origin: 'd2' | 'd1-reprised' | 'd1' | 'unknown';
+  activityType: 'raid' | 'dungeon' | 'unknown';
   fireteamMembers: FireteamMember[];
   totalClears: number;
 }
@@ -60,6 +61,7 @@ export default function RaidMemories({ raids, playerName, onLoadFireteam }: Prop
           firstClearDate: raid.period,
           instanceId: raid.instanceId,
           origin: raid.origin,
+          activityType: raid.activityType,
           fireteamMembers: members || [],
           totalClears: clearCounts.get(raidName) || 1,
         });
@@ -248,6 +250,9 @@ export default function RaidMemories({ raids, playerName, onLoadFireteam }: Prop
                 <div className="memory-overlay">
                   <h3 className="memory-raid-name">
                     {memory.raidName}
+                    {memory.activityType === 'dungeon' && (
+                      <span className="origin-badge memory-origin-badge dungeon-badge">Dungeon</span>
+                    )}
                     {memory.origin === 'd1-reprised' && (
                       <span className="origin-badge memory-origin-badge">Reprised</span>
                     )}

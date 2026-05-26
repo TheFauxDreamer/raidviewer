@@ -539,6 +539,12 @@ a {
   border-color: rgba(138, 180, 216, 0.35);
 }
 
+.dungeon-badge {
+  color: #9b8ec4;
+  background: rgba(155, 142, 196, 0.15);
+  border-color: rgba(155, 142, 196, 0.35);
+}
+
 .raid-date {
   font-size: 0.75rem;
   color: var(--text-muted);

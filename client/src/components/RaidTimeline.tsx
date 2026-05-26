@@ -3,7 +3,7 @@ import { RaidActivity, FireteamMember } from '../utils/bungieApi';
 
 interface Props {
   raids: RaidActivity[];
-  onLoadFireteam: (instanceId: string) => Promise<FireteamMember[] | null>;
+  onLoadFireteam: (instanceId: string, origin?: string) => Promise<FireteamMember[] | null>;
 }
 
 function formatDate(isoStr: string): string {
@@ -45,13 +45,14 @@ export default function RaidTimeline({ raids, onLoadFireteam }: Props) {
 
     if (!fireteams[instanceId]) {
       setLoadingFireteam(instanceId);
-      const members = await onLoadFireteam(instanceId);
+      const raid = raids.find(r => r.instanceId === instanceId);
+      const members = await onLoadFireteam(instanceId, raid?.origin);
       if (members) {
         setFireteams((prev) => ({ ...prev, [instanceId]: members }));
       }
       setLoadingFireteam(null);
     }
-  }, [expandedId, fireteams, onLoadFireteam]);
+  }, [expandedId, fireteams, onLoadFireteam, raids]);
 
   if (raids.length === 0) {
     return (
@@ -82,7 +83,15 @@ export default function RaidTimeline({ raids, onLoadFireteam }: Props) {
             <div className="timeline-card" onClick={() => handleExpand(raid.instanceId)}>
               <div className="card-header">
                 <div className="card-title-group">
-                  <h3 className="raid-name">{raid.activityName}</h3>
+                  <h3 className="raid-name">
+                    {raid.activityName}
+                    {raid.origin === 'd1-reprised' && (
+                      <span className="origin-badge">Reprised</span>
+                    )}
+                    {raid.origin === 'd1' && (
+                      <span className="origin-badge d1-badge">D1</span>
+                    )}
+                  </h3>
                   <span className="raid-date">{formatDate(raid.period)}</span>
                 </div>
                 <div className="card-badges">

@@ -22,6 +22,7 @@ export interface RaidActivity {
   activityHash: number;
   activityName: string;
   directorActivityHash: number;
+  origin: 'd2' | 'd1-reprised' | 'd1' | 'unknown';
   mode: number;
   isCompleted: boolean;
   kills: number;
@@ -106,5 +107,45 @@ export async function getActivityHistory(
 
 export async function getPGCR(instanceId: string): Promise<any> {
   const res = await fetch(`${API_BASE}?action=pgcr&instanceId=${instanceId}`);
+  return res.json();
+}
+
+// --- Destiny 1 API ---
+
+export async function getLinkedProfiles(
+  membershipType: number,
+  membershipId: string
+): Promise<any> {
+  const res = await fetch(
+    `${API_BASE}?action=linkedProfiles&membershipType=${membershipType}&membershipId=${membershipId}`
+  );
+  return res.json();
+}
+
+export async function getD1Profile(
+  membershipType: number,
+  membershipId: string
+): Promise<any> {
+  const res = await fetch(
+    `${API_BASE}?action=d1Profile&membershipType=${membershipType}&membershipId=${membershipId}`
+  );
+  return res.json();
+}
+
+export async function getD1ActivityHistory(
+  membershipType: number,
+  membershipId: string,
+  characterId: string,
+  page: number = 0,
+  count: number = 250
+): Promise<any> {
+  const res = await fetch(
+    `${API_BASE}?action=d1ActivityHistory&membershipType=${membershipType}&membershipId=${membershipId}&characterId=${characterId}&count=${count}&page=${page}`
+  );
+  return res.json();
+}
+
+export async function getD1PGCR(instanceId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}?action=d1Pgcr&instanceId=${instanceId}`);
   return res.json();
 }

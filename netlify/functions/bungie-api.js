@@ -66,6 +66,42 @@ exports.handler = async (event) => {
         url = `${BUNGIE_ROOT}/Destiny2/Stats/PostGameCarnageReport/${instanceId}/`;
         break;
       }
+      // --- Destiny 1 endpoints ---
+      case 'd1Profile': {
+        const { membershipType, membershipId } = params;
+        if (!membershipType || !membershipId) {
+          return { statusCode: 400, headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Missing membershipType or membershipId' }) };
+        }
+        url = `${BUNGIE_ROOT}/Destiny/${membershipType}/Account/${membershipId}/`;
+        break;
+      }
+      case 'd1ActivityHistory': {
+        const { membershipType, membershipId, characterId, count, page } = params;
+        if (!membershipType || !membershipId || !characterId) {
+          return { statusCode: 400, headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Missing membershipType, membershipId, or characterId' }) };
+        }
+        const c = count || '250';
+        const p = page || '0';
+        url = `${BUNGIE_ROOT}/Destiny/Stats/ActivityHistory/${membershipType}/${membershipId}/${characterId}/?mode=Raid&count=${c}&page=${p}`;
+        break;
+      }
+      case 'd1Pgcr': {
+        const { instanceId } = params;
+        if (!instanceId) {
+          return { statusCode: 400, headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Missing instanceId' }) };
+        }
+        url = `${BUNGIE_ROOT}/Destiny/Stats/PostGameCarnageReport/${instanceId}/`;
+        break;
+      }
+      // --- Linked profiles (cross-save / D1 accounts) ---
+      case 'linkedProfiles': {
+        const { membershipType, membershipId } = params;
+        if (!membershipType || !membershipId) {
+          return { statusCode: 400, headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Missing membershipType or membershipId' }) };
+        }
+        url = `${BUNGIE_ROOT}/Destiny2/${membershipType}/Profile/${membershipId}/LinkedProfiles/`;
+        break;
+      }
       default:
         return {
           statusCode: 400,

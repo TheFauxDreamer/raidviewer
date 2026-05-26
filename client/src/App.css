@@ -392,6 +392,32 @@ a {
   text-overflow: ellipsis;
 }
 
+.origin-badge {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(200, 168, 78, 0.15);
+  border: 1px solid rgba(200, 168, 78, 0.35);
+  padding: 0.05rem 0.35rem;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+}
+
+.memory-origin-badge {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  margin-left: 0.5rem;
+}
+
+.d1-badge {
+  color: #8ab4d8;
+  background: rgba(138, 180, 216, 0.15);
+  border-color: rgba(138, 180, 216, 0.35);
+}
+
 .raid-date {
   font-size: 0.75rem;
   color: var(--text-muted);

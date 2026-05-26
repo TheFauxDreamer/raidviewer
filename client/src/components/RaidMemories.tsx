@@ -5,13 +5,14 @@ import { getRaidSlug } from '../utils/raidDefinitions';
 interface Props {
   raids: RaidActivity[];
   playerName: string;
-  onLoadFireteam: (instanceId: string) => Promise<FireteamMember[] | null>;
+  onLoadFireteam: (instanceId: string, origin?: string) => Promise<FireteamMember[] | null>;
 }
 
 interface RaidMemory {
   raidName: string;
   firstClearDate: string;
   instanceId: string;
+  origin: 'd2' | 'd1-reprised' | 'unknown';
   fireteamMembers: FireteamMember[];
   totalClears: number;
 }
@@ -69,11 +70,12 @@ export default function RaidMemories({ raids, playerName, onLoadFireteam }: Prop
       const result: RaidMemory[] = [];
 
       for (const [raidName, raid] of firstClears) {
-        const members = await onLoadFireteam(raid.instanceId);
+        const members = await onLoadFireteam(raid.instanceId, raid.origin);
         result.push({
           raidName,
           firstClearDate: raid.period,
           instanceId: raid.instanceId,
+          origin: raid.origin,
           fireteamMembers: members || [],
           totalClears: clearCounts.get(raidName) || 1,
         });
@@ -154,10 +156,37 @@ export default function RaidMemories({ raids, playerName, onLoadFireteam }: Prop
       const rightEdge = width - padding;
       let y = height - padding - 80;
 
-      // Raid name
+      // Raid name (with origin badge if D1 or Reprised)
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 52px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
       ctx.textAlign = 'right';
+
+      const originLabel = memory.origin === 'd1-reprised' ? 'Reprised' : memory.origin === 'd1' ? 'D1' : null;
+      if (originLabel) {
+        const textWidth = ctx.measureText(memory.raidName).width;
+        const badgeX = rightEdge - textWidth - 16;
+        const badgeY = y - 38;
+
+        ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
+        const badgeMetrics = ctx.measureText(originLabel);
+        const badgeW = badgeMetrics.width + 16;
+        const badgeH = 28;
+
+        const isD1 = memory.origin === 'd1';
+        ctx.fillStyle = isD1 ? 'rgba(138,180,216,0.25)' : 'rgba(180,150,100,0.25)';
+        ctx.strokeStyle = isD1 ? 'rgba(138,180,216,0.5)' : 'rgba(180,150,100,0.5)';
+        ctx.lineWidth = 1;
+        ctx.fillRect(badgeX - badgeW - 8, badgeY, badgeW, badgeH);
+        ctx.strokeRect(badgeX - badgeW - 8, badgeY, badgeW, badgeH);
+
+        ctx.fillStyle = isD1 ? '#8ab4d8' : '#c8a84e';
+        ctx.textAlign = 'center';
+        ctx.fillText(originLabel, badgeX - badgeW/2 - 8, badgeY + 20);
+      }
+
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 52px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
       ctx.fillText(memory.raidName, rightEdge, y);
 
       // Date
@@ -251,7 +280,15 @@ export default function RaidMemories({ raids, playerName, onLoadFireteam }: Prop
 
                 {/* Overlay info — bottom right */}
                 <div className="memory-overlay">
-                  <h3 className="memory-raid-name">{memory.raidName}</h3>
+                  <h3 className="memory-raid-name">
+                    {memory.raidName}
+                    {memory.origin === 'd1-reprised' && (
+                      <span className="origin-badge memory-origin-badge">Reprised</span>
+                    )}
+                    {memory.origin === 'd1' && (
+                      <span className="origin-badge memory-origin-badge d1-badge">D1</span>
+                    )}
+                  </h3>
                   <p className="memory-date">{formatDate(memory.firstClearDate)}</p>
                   <p className="memory-player">{playerName}</p>
                   {memory.fireteamMembers.length > 0 && (

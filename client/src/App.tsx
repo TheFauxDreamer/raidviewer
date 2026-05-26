@@ -1,7 +1,10 @@
 import { useState, useCallback } from 'react';
 import { searchPlayer, getProfile, getActivityHistory, getPGCR, BungieProfile, RaidActivity, FireteamMember } from '../utils/bungieApi';
-import { getRaidName, getRaidIcon, CLASS_NAMES, CLASS_EMOJIS } from '../utils/raidDefinitions';
+import { getRaidName, CLASS_NAMES } from '../utils/raidDefinitions';
 import RaidTimeline from './RaidTimeline';
+import RaidMemories from './RaidMemories';
+
+type ViewMode = 'timeline' | 'memories';
 
 export default function App() {
   const [searchName, setSearchName] = useState('');
@@ -12,6 +15,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [progress, setProgress] = useState('');
+  const [viewMode, setViewMode] = useState<ViewMode>('timeline');
 
   const handleSearch = useCallback(async () => {
     if (!searchName.trim() || !searchCode.trim()) return;
@@ -56,7 +60,6 @@ export default function App() {
       }
 
       const allRaids: RaidActivity[] = [];
-      const firstClearMap = new Map<string, boolean>(); // raidName -> already seen?
 
       for (const char of characters) {
         setProgress(`Loading raids for ${CLASS_NAMES[char.classType] || 'Character'}...`);
@@ -88,12 +91,6 @@ export default function App() {
             const isCompleted = act.values?.completed?.basic?.value === 1 ||
                                 act.values?.completionReason?.basic?.value === 0;
 
-            // Determine if this is the first clear of this raid
-            const isFirstClear = isCompleted && !firstClearMap.has(raidName);
-            if (isFirstClear) {
-              firstClearMap.set(raidName, true);
-            }
-
             const raidEntry: RaidActivity = {
               instanceId: act.activityDetails.instanceId,
               period: act.period,
@@ -110,19 +107,29 @@ export default function App() {
               standing: act.values?.standing?.basic?.value || 0,
               playerCount: act.values?.playerCount?.basic?.value || 0,
               fireteamMembers: [],
-              isFirstClear,
+              isFirstClear: false,
             };
 
             allRaids.push(raidEntry);
           }
 
           page++;
-          // Safety: don't fetch too many pages
           if (page > 20) hasMore = false;
         }
       }
 
-      // Sort by date, newest first
+      // Sort oldest-first to find the true first clear of each raid
+      allRaids.sort((a, b) => new Date(a.period).getTime() - new Date(b.period).getTime());
+
+      const firstClearMap = new Map<string, boolean>();
+      for (const raid of allRaids) {
+        if (raid.isCompleted && !firstClearMap.has(raid.activityName)) {
+          raid.isFirstClear = true;
+          firstClearMap.set(raid.activityName, true);
+        }
+      }
+
+      // Sort back to newest-first for display
       allRaids.sort((a, b) => new Date(b.period).getTime() - new Date(a.period).getTime());
 
       setRaids(allRaids);
@@ -168,20 +175,17 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>
-          <span className="logo-icon">⚔️</span>
-          Destiny 2 Raid Viewer
-        </h1>
-        <p className="subtitle">Your complete raid history, chronologically ordered</p>
+        <h1>Destiny 2 Raid Viewer</h1>
+        <p className="subtitle">Your complete raid history in chronological order</p>
       </header>
 
       <main className="app-main">
         {!selectedProfile ? (
           <div className="search-section">
             <div className="search-card">
-              <h2>Find Your Guardian</h2>
+              <h2>Look up a player</h2>
               <p className="search-hint">
-                Enter your Bungie name exactly as it appears in-game (e.g., Guardian#1234)
+                Enter a Bungie name (e.g., Guardian#1234)
               </p>
               <div className="search-inputs">
                 <input
@@ -211,7 +215,7 @@ export default function App() {
 
               {profiles.length > 0 && (
                 <div className="profile-list">
-                  <h3>Select your platform:</h3>
+                  <h3>Select platform:</h3>
                   {profiles.map((p) => (
                     <button
                       key={`${p.membershipType}-${p.membershipId}`}
@@ -219,12 +223,12 @@ export default function App() {
                       onClick={() => handleSelectProfile(p)}
                     >
                       <span className="platform-badge">
-                        {p.membershipType === 1 ? '🎮 Xbox' :
-                         p.membershipType === 2 ? '🎮 PSN' :
-                         p.membershipType === 3 ? '💻 Steam' :
-                         p.membershipType === 4 ? '🎮 Battle.net' :
-                         p.membershipType === 5 ? '🎮 Stadia' :
-                         p.membershipType === 10 ? '🎮 Epic' :
+                        {p.membershipType === 1 ? 'Xbox' :
+                         p.membershipType === 2 ? 'PlayStation' :
+                         p.membershipType === 3 ? 'Steam' :
+                         p.membershipType === 4 ? 'Battle.net' :
+                         p.membershipType === 5 ? 'Stadia' :
+                         p.membershipType === 10 ? 'Epic' :
                          `Platform ${p.membershipType}`}
                       </span>
                       <span className="profile-name">
@@ -235,50 +239,54 @@ export default function App() {
                 </div>
               )}
             </div>
-
-            <div className="info-card">
-              <h3>How it works</h3>
-              <ol>
-                <li>Enter your Bungie name (the one shown in-game)</li>
-                <li>Select your platform</li>
-                <li>We fetch ALL your raid completions across all characters</li>
-                <li>Raids are shown chronologically with first-time clear flags 🏆</li>
-                <li>Click any raid to see detailed stats & fireteam members</li>
-              </ol>
-              <p className="setup-note">
-                <strong>Setup:</strong> You need a Bungie API key. Copy <code>server/.env.example</code> to{' '}
-                <code>server/.env</code> and add your key from{' '}
-                <a href="https://www.bungie.net/en/Application" target="_blank" rel="noopener noreferrer">
-                  bungie.net/en/Application
-                </a>
-              </p>
-            </div>
           </div>
         ) : (
           <div className="results-section">
             <div className="results-header">
-              <button onClick={handleBack} className="back-btn">← Back to Search</button>
+              <button onClick={handleBack} className="back-btn">← Back</button>
               <h2>
                 {selectedProfile.displayName}#{selectedProfile.bungieGlobalDisplayNameCode}
-                <span className="raid-count">{raids.length} raids found</span>
+                <span className="raid-count">{raids.length} raids</span>
               </h2>
+              <div className="view-toggle">
+                <button
+                  className={`toggle-btn ${viewMode === 'timeline' ? 'active' : ''}`}
+                  onClick={() => setViewMode('timeline')}
+                >
+                  Timeline
+                </button>
+                <button
+                  className={`toggle-btn ${viewMode === 'memories' ? 'active' : ''}`}
+                  onClick={() => setViewMode('memories')}
+                >
+                  Memories
+                </button>
+              </div>
             </div>
 
             {loading && progress && <div className="loading-bar">{progress}</div>}
 
-            <RaidTimeline
-              raids={raids}
-              onLoadFireteam={handleLoadFireteam}
-            />
+            {viewMode === 'timeline' ? (
+              <RaidTimeline
+                raids={raids}
+                onLoadFireteam={handleLoadFireteam}
+              />
+            ) : (
+              <RaidMemories
+                raids={raids}
+                playerName={`${selectedProfile.displayName}#${selectedProfile.bungieGlobalDisplayNameCode}`}
+                onLoadFireteam={handleLoadFireteam}
+              />
+            )}
           </div>
         )}
       </main>
 
       <footer className="app-footer">
         <p>
-          Destiny 2 Raid Viewer · Not affiliated with Bungie ·{' '}
+          Not affiliated with Bungie. {' '}
           <a href="https://www.bungie.net/en/Application" target="_blank" rel="noopener noreferrer">
-            Get API Key
+            Get an API key
           </a>
         </p>
       </footer>

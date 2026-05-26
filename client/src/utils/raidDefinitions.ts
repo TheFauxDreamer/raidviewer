@@ -63,6 +63,14 @@ export function getRaidReleaseDate(directorActivityHash: number): string {
   return def ? def.releaseDate : '';
 }
 
+export function getRaidSlug(raidName: string): string {
+  return raidName
+    .toLowerCase()
+    .replace(/['']/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
 export const CLASS_NAMES: Record<number, string> = {
   0: 'Titan',
   1: 'Hunter',

@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
 import { RaidActivity, FireteamMember } from '../utils/bungieApi';
-import { getRaidIcon, CLASS_EMOJIS } from '../utils/raidDefinitions';
 
 interface Props {
   raids: RaidActivity[];
@@ -28,7 +27,7 @@ function formatDuration(seconds: number): string {
 }
 
 function formatKD(kills: number, deaths: number): string {
-  if (deaths === 0) return kills > 0 ? '∞' : '0.00';
+  if (deaths === 0) return kills > 0 ? '--' : '0.00';
   return (kills / deaths).toFixed(2);
 }
 
@@ -58,7 +57,7 @@ export default function RaidTimeline({ raids, onLoadFireteam }: Props) {
     return (
       <div className="empty-state">
         <p>No raid completions found for this account.</p>
-        <p className="empty-hint">Make sure you've completed raids on this character.</p>
+        <p className="empty-hint">Try a different platform or character.</p>
       </div>
     );
   }
@@ -82,21 +81,18 @@ export default function RaidTimeline({ raids, onLoadFireteam }: Props) {
 
             <div className="timeline-card" onClick={() => handleExpand(raid.instanceId)}>
               <div className="card-header">
-                <span className="raid-icon">{getRaidIcon(raid.directorActivityHash)}</span>
                 <div className="card-title-group">
                   <h3 className="raid-name">{raid.activityName}</h3>
                   <span className="raid-date">{formatDate(raid.period)}</span>
                 </div>
                 <div className="card-badges">
                   {raid.isFirstClear && (
-                    <span className="badge first-clear-badge" title="First time clearing this raid!">
-                      🏆 First Clear!
-                    </span>
+                    <span className="badge first-clear-badge">First clear</span>
                   )}
                   {raid.isCompleted ? (
-                    <span className="badge completed-badge">✅ Clear</span>
+                    <span className="badge completed-badge">Clear</span>
                   ) : (
-                    <span className="badge incomplete-badge">❌ Incomplete</span>
+                    <span className="badge incomplete-badge">Incomplete</span>
                   )}
                 </div>
               </div>
@@ -123,7 +119,7 @@ export default function RaidTimeline({ raids, onLoadFireteam }: Props) {
                   <span className="stat-value">{raid.assists.toLocaleString()}</span>
                 </div>
                 <div className="stat">
-                  <span className="stat-label">Fireteam</span>
+                  <span className="stat-label">Players</span>
                   <span className="stat-value">{raid.playerCount}</span>
                 </div>
               </div>
@@ -132,23 +128,19 @@ export default function RaidTimeline({ raids, onLoadFireteam }: Props) {
                 <div className="card-details" onClick={(e) => e.stopPropagation()}>
                   <h4>Fireteam</h4>
                   {isLoadingFt ? (
-                    <p className="loading-text">Loading fireteam details...</p>
+                    <p className="loading-text">Loading...</p>
                   ) : ftMembers && ftMembers.length > 0 ? (
                     <div className="fireteam-grid">
                       {ftMembers.map((member, mi) => (
                         <div key={mi} className={`fireteam-member ${member.completed ? '' : 'did-not-finish'}`}>
                           <div className="member-header">
-                            <span className="member-class">
-                              {CLASS_EMOJIS[member.membershipType] || '👤'} {member.characterClass}
-                            </span>
+                            <span className="member-class">{member.characterClass}</span>
                             <span className="member-name">
                               {member.displayName}#{member.bungieGlobalDisplayNameCode}
                             </span>
-                            {member.completed ? (
-                              <span className="member-status completed">✅</span>
-                            ) : (
-                              <span className="member-status incomplete">❌</span>
-                            )}
+                            <span className="member-status">
+                              {member.completed ? 'completed' : 'left early'}
+                            </span>
                           </div>
                           <div className="member-stats">
                             <span>K: {member.kills.toLocaleString()}</span>
@@ -166,7 +158,7 @@ export default function RaidTimeline({ raids, onLoadFireteam }: Props) {
               )}
 
               <div className="card-expand-hint">
-                {isExpanded ? '▲ Click to collapse' : '▼ Click for fireteam details'}
+                {isExpanded ? 'Click to collapse' : 'Click for fireteam details'}
               </div>
             </div>
           </div>

@@ -12,7 +12,7 @@ interface RaidMemory {
   raidName: string;
   firstClearDate: string;
   instanceId: string;
-  origin: 'd2' | 'd1-reprised' | 'unknown';
+  origin: 'd2' | 'd1-reprised' | 'd1' | 'unknown';
   fireteamMembers: FireteamMember[];
   totalClears: number;
 }

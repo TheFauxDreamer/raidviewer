@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
-import { searchPlayer, getProfile, getActivityHistory, getPGCR, getLinkedProfiles, getD1Profile, getD1ActivityHistory, getD1PGCR, BungieProfile, RaidActivity, FireteamMember } from '../utils/bungieApi';
-import { getRaidName, getRaidOrigin, CLASS_NAMES } from '../utils/raidDefinitions';
-import RaidTimeline from './RaidTimeline';
-import RaidMemories from './RaidMemories';
+import { searchPlayer, getProfile, getActivityHistory, getPGCR, getLinkedProfiles, getD1Profile, getD1ActivityHistory, getD1PGCR, BungieProfile, RaidActivity, FireteamMember } from './utils/bungieApi';
+import { getRaidName, getRaidOrigin, CLASS_NAMES } from './utils/raidDefinitions';
+import RaidTimeline from './components/RaidTimeline';
+import RaidMemories from './components/RaidMemories';
 
 type ViewMode = 'timeline' | 'memories';
 

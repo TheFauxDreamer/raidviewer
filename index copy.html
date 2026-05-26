@@ -41,6 +41,7 @@
       overflow-x: hidden;
     }
 
+    /* Animated starfield */
     body::before {
       content: '';
       position: fixed;
@@ -79,6 +80,7 @@
       padding: 0 20px 60px;
     }
 
+    /* Header */
     header {
       padding: 40px 0 30px;
       display: flex;
@@ -111,6 +113,7 @@
       margin-top: 4px;
     }
 
+    /* API Key section */
     .api-section {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -145,6 +148,7 @@
       gap: 10px;
     }
 
+    /* Inputs */
     input[type="text"],
     input[type="password"] {
       background: var(--bg);
@@ -167,6 +171,7 @@
       color: var(--muted);
     }
 
+    /* Buttons */
     button {
       background: transparent;
       border: 1px solid var(--accent);
@@ -204,6 +209,7 @@
       background: transparent;
     }
 
+    /* Search */
     .search-section {
       margin-bottom: 28px;
     }
@@ -229,6 +235,7 @@
       font-family: 'Share Tech Mono', monospace;
     }
 
+    /* Status / error */
     .status-bar {
       padding: 10px 16px;
       font-size: 12px;
@@ -254,6 +261,7 @@
       color: var(--ghost);
     }
 
+    /* Loading spinner */
     .spinner {
       width: 16px;
       height: 16px;
@@ -270,6 +278,7 @@
       }
     }
 
+    /* Search results list */
     .results-list {
       display: none;
       background: var(--surface);
@@ -316,6 +325,7 @@
       padding: 2px 8px;
     }
 
+    /* Guardian profile card */
     #profile-section {
       display: none;
     }
@@ -355,6 +365,7 @@
       font-size: 13px;
     }
 
+    /* Character tabs */
     .char-tabs {
       display: flex;
       gap: 8px;
@@ -424,6 +435,29 @@
       margin-top: 2px;
     }
 
+    /* Activity filters */
+    .activity-controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .mode-select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 13px;
+      letter-spacing: 0.05em;
+      outline: none;
+      cursor: pointer;
+      flex: 1;
+      min-width: 160px;
+    }
+
     .section-title {
       font-size: 11px;
       letter-spacing: 0.25em;
@@ -442,21 +476,13 @@
       background: var(--border);
     }
 
-    .section-title .count {
-      color: var(--accent);
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 11px;
-      font-weight: normal;
-      letter-spacing: 0.05em;
-    }
-
+    /* Activity list */
     .activity-list {
       display: flex;
       flex-direction: column;
       gap: 4px;
     }
 
-    /* ── Standard activity card ── */
     .activity-item {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -466,9 +492,8 @@
       grid-template-columns: 1fr auto;
       gap: 8px 16px;
       align-items: center;
-      transition: background 0.15s;
-      animation: fadeIn 0.25s ease both;
-      position: relative;
+      transition: border-color 0.15s, background 0.15s;
+      animation: fadeIn 0.3s ease both;
     }
 
     @keyframes fadeIn {
@@ -487,53 +512,22 @@
       background: var(--surface2);
     }
 
-    .activity-item.completed {
-      border-left-color: var(--accent2);
+    .activity-item.win {
+      border-left-color: var(--success);
     }
 
-    .activity-item.dnf {
+    .activity-item.loss {
       border-left-color: var(--danger);
     }
 
-    /* ── First clear — special treatment ── */
-    .activity-item.first-clear {
-      border: 1px solid rgba(200, 168, 75, 0.35);
-      border-left: 4px solid var(--accent);
-      background: linear-gradient(90deg, rgba(200, 168, 75, 0.07) 0%, rgba(200, 168, 75, 0.02) 60%, transparent 100%);
-      box-shadow: 0 0 20px rgba(200, 168, 75, 0.06), inset 0 0 40px rgba(200, 168, 75, 0.03);
-    }
-
-    .activity-item.first-clear:hover {
-      background: linear-gradient(90deg, rgba(200, 168, 75, 0.11) 0%, rgba(200, 168, 75, 0.04) 60%, transparent 100%);
-    }
-
-    .activity-item.first-clear .act-name {
-      color: var(--accent);
-    }
-
-    /* shimmer line on first-clear card */
-    .activity-item.first-clear::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: linear-gradient(90deg, var(--accent), transparent);
-      opacity: 0.5;
+    .activity-item.completed {
+      border-left-color: var(--accent2);
     }
 
     .act-main {
       display: flex;
       flex-direction: column;
-      gap: 4px;
-    }
-
-    .act-name-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
+      gap: 3px;
     }
 
     .act-name {
@@ -541,47 +535,6 @@
       font-weight: 600;
       color: var(--text);
       letter-spacing: 0.03em;
-    }
-
-    .first-clear-badge {
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--accent);
-      border: 1px solid rgba(200, 168, 75, 0.5);
-      background: rgba(200, 168, 75, 0.1);
-      padding: 2px 7px;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      white-space: nowrap;
-    }
-
-    .first-clear-badge::before {
-      content: '◆';
-      font-size: 7px;
-    }
-
-    .act-type-badge {
-      font-size: 9px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--muted);
-      border: 1px solid var(--border);
-      padding: 2px 7px;
-    }
-
-    .act-type-badge.raid {
-      color: #c88aff;
-      border-color: rgba(138, 75, 200, 0.4);
-      background: rgba(138, 75, 200, 0.06);
-    }
-
-    .act-type-badge.dungeon {
-      color: var(--accent2);
-      border-color: rgba(75, 143, 200, 0.4);
-      background: rgba(75, 143, 200, 0.06);
     }
 
     .act-meta {
@@ -629,18 +582,42 @@
       border: 1px solid;
     }
 
-    .act-result.ok {
-      color: var(--accent2);
-      border-color: var(--accent2);
-      background: rgba(75, 143, 200, 0.08);
+    .act-result.win {
+      color: var(--success);
+      border-color: var(--success);
+      background: rgba(75, 200, 138, 0.08);
     }
 
-    .act-result.dnf {
+    .act-result.loss {
       color: var(--danger);
       border-color: var(--danger);
       background: rgba(200, 75, 75, 0.08);
     }
 
+    .act-result.completed {
+      color: var(--accent2);
+      border-color: var(--accent2);
+      background: rgba(75, 143, 200, 0.08);
+    }
+
+    /* Pagination */
+    .pagination {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: center;
+    }
+
+    .page-info {
+      font-size: 12px;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+    }
+
+    /* Empty state */
     .empty-state {
       text-align: center;
       padding: 60px 20px;
@@ -658,41 +635,14 @@
       letter-spacing: 0.08em;
     }
 
+    /* Divider decoration */
     .deco-line {
       height: 1px;
       background: linear-gradient(90deg, transparent, var(--border), transparent);
       margin: 8px 0 20px;
     }
 
-    .summary-bar {
-      display: flex;
-      gap: 24px;
-      padding: 12px 0;
-      margin-bottom: 16px;
-      border-bottom: 1px solid var(--border);
-      flex-wrap: wrap;
-    }
-
-    .summary-stat {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .summary-val {
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--ghost);
-      font-family: 'Share Tech Mono', monospace;
-    }
-
-    .summary-lbl {
-      font-size: 10px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-
+    /* Responsive */
     @media (max-width: 600px) {
       .act-stats {
         gap: 10px;
@@ -704,10 +654,6 @@
 
       .act-meta {
         gap: 6px;
-      }
-
-      .act-stats .stat-item:nth-child(3) {
-        display: none;
       }
     }
   </style>
@@ -726,10 +672,11 @@
       </svg>
       <div class="header-text">
         <h1>Ghost</h1>
-        <p>Destiny 2 · Raid &amp; Dungeon History</p>
+        <p>Destiny 2 · Guardian Lookup</p>
       </div>
     </header>
 
+    <!-- API Key -->
     <div class="api-section">
       <label>Bungie API Key</label>
       <div class="api-input-row">
@@ -738,6 +685,7 @@
       </div>
     </div>
 
+    <!-- Search -->
     <div class="search-section">
       <label class="search-label">Search Guardian</label>
       <div class="search-row">
@@ -748,13 +696,16 @@
       <div class="search-hint">Enter the guardian's Bungie name with their numeric code</div>
     </div>
 
+    <!-- Status -->
     <div class="status-bar" id="statusBar">
       <div class="spinner" id="statusSpinner" style="display:none"></div>
       <span id="statusText"></span>
     </div>
 
+    <!-- Search results -->
     <div class="results-list" id="resultsList"></div>
 
+    <!-- Guardian profile -->
     <div id="profile-section">
       <div class="profile-header">
         <div class="guardian-name" id="guardianName"></div>
@@ -766,39 +717,35 @@
 
       <div class="deco-line"></div>
 
-      <div class="section-title">
-        Raid &amp; Dungeon History
-        <span class="count" id="activityCount"></span>
+      <div class="activity-controls">
+        <select class="mode-select" id="modeFilter" onchange="loadActivities(0)">
+          <option value="0">All Activities</option>
+          <option value="7">PvE</option>
+          <option value="4">Raids</option>
+          <option value="82">Dungeons</option>
+          <option value="3">Strikes</option>
+          <option value="18">Nightfalls</option>
+          <option value="5">PvP</option>
+          <option value="84">Trials of Osiris</option>
+          <option value="19">Iron Banner</option>
+          <option value="63">Gambit</option>
+          <option value="6">Patrol</option>
+        </select>
+        <button class="secondary" onclick="loadActivities(0)">↺ Refresh</button>
       </div>
 
-      <div class="summary-bar" id="summaryBar" style="display:none">
-        <div class="summary-stat">
-          <div class="summary-val" id="sumTotal">—</div>
-          <div class="summary-lbl">Total Runs</div>
-        </div>
-        <div class="summary-stat">
-          <div class="summary-val" id="sumClears">—</div>
-          <div class="summary-lbl">Clears</div>
-        </div>
-        <div class="summary-stat">
-          <div class="summary-val" id="sumFirstClears">—</div>
-          <div class="summary-lbl">First Clears</div>
-        </div>
-        <div class="summary-stat">
-          <div class="summary-val" id="sumRaids">—</div>
-          <div class="summary-lbl">Raid Clears</div>
-        </div>
-        <div class="summary-stat">
-          <div class="summary-val" id="sumDungeons">—</div>
-          <div class="summary-lbl">Dungeon Clears</div>
-        </div>
-      </div>
-
+      <div class="section-title">Activity History</div>
       <div class="activity-list" id="activityList">
         <div class="empty-state">
           <div class="icon">◈</div>
-          <p>Select a character to view history</p>
+          <p>Select a character to view activities</p>
         </div>
+      </div>
+
+      <div class="pagination" id="pagination" style="display:none">
+        <button class="secondary" id="prevBtn" onclick="changePage(-1)">◀ Prev</button>
+        <div class="page-info" id="pageInfo"></div>
+        <button class="secondary" id="nextBtn" onclick="changePage(1)">Next ▶</button>
       </div>
     </div>
 
@@ -806,19 +753,42 @@
 
   <script>
     const API_ROOT = 'https://www.bungie.net/Platform';
+    const BUNGIE_ROOT = 'https://www.bungie.net';
 
-    const CLASS_NAMES = { 0: 'Titan', 1: 'Hunter', 2: 'Warlock', 3: 'Unknown' };
-    const RACE_NAMES = { 0: 'Human', 1: 'Awoken', 2: 'Exo', 3: 'Unknown' };
-    const PLATFORM_NAMES = { 1: 'Xbox', 2: 'PSN', 3: 'Steam', 4: 'Blizzard', 5: 'Stadia', 6: 'Epic', 254: 'BungieNet', 0: 'None' };
-
+    // State
     let state = {
-      apiKey: '', membershipId: '', membershipType: '',
-      displayName: '', displayNameCode: '', characters: [], activeCharId: ''
+      apiKey: '',
+      membershipId: '',
+      membershipType: '',
+      displayName: '',
+      displayNameCode: '',
+      characters: [],
+      activeCharId: '',
+      currentPage: 0,
+      loading: false
     };
 
-    // Name cache: hash → string
-    const nameCache = {};
+    // Class / race maps
+    const CLASS_NAMES = { 0: 'Titan', 1: 'Hunter', 2: 'Warlock', 3: 'Unknown' };
+    const RACE_NAMES = { 0: 'Human', 1: 'Awoken', 2: 'Exo', 3: 'Unknown' };
+    const PLATFORM_NAMES = { 1: 'Xbox', 2: 'PSN', 3: 'Steam', 4: 'Blizzard', 5: 'Stadia', 6: 'Epic', 10: 'Demon', 254: 'BungieNet', 0: 'None' };
+    const MODE_NAMES = {
+      0: 'All', 2: 'Story', 3: 'Strike', 4: 'Raid', 5: 'PvP', 6: 'Patrol',
+      7: 'PvE', 9: '', 10: 'Control', 12: 'Clash', 15: 'Crimson Doubles',
+      16: 'Nightfall', 17: 'Heroic Nightfall', 18: 'All Strikes', 19: 'Iron Banner',
+      25: 'Mayhem', 31: 'Supremacy', 37: 'Survival', 38: 'Countdown',
+      39: 'Trials of the Nine', 43: 'IB Control', 44: 'IB Clash', 45: 'IB Supremacy',
+      46: 'Scored Nightfall', 47: 'Scored Heroic Nightfall', 48: 'Rumble',
+      58: 'Heroic Adventure', 59: 'Showdown', 61: 'Scorched', 62: 'Scorched Team',
+      63: 'Gambit', 64: 'PvE Competitive', 65: 'Breakthrough',
+      69: 'PvP Competitive', 70: 'PvP Quickplay', 75: 'Gambit Prime',
+      76: 'Reckoning', 77: 'Menagerie', 78: 'Vex Offensive', 79: 'Nightmare Hunt',
+      80: 'Elimination', 81: 'Momentum', 82: 'Dungeon', 83: 'Sundial',
+      84: 'Trials of Osiris', 85: 'Dares of Eternity', 86: 'Offensive',
+      87: 'Lost Sector', 88: 'Rift', 89: 'Zone Control', 90: 'IB Rift', 91: 'IB Zone Control'
+    };
 
+    // Init saved key
     window.onload = () => {
       const saved = localStorage.getItem('bungie_api_key');
       if (saved) {
@@ -844,15 +814,17 @@
       bar.style.display = 'flex';
     }
 
-    function hideStatus() { document.getElementById('statusBar').style.display = 'none'; }
+    function hideStatus() {
+      document.getElementById('statusBar').style.display = 'none';
+    }
 
-    function apiFetch(path) {
-      if (!state.apiKey) { showStatus('Set your API key first.', 'error', false); throw new Error('No key'); }
+    function api(path) {
+      if (!state.apiKey) { showStatus('Set your API key first.', 'error', false); throw new Error('No API key'); }
       return fetch(API_ROOT + path, { headers: { 'X-API-Key': state.apiKey } }).then(r => r.json());
     }
 
     function apiPost(path, body) {
-      if (!state.apiKey) { showStatus('Set your API key first.', 'error', false); throw new Error('No key'); }
+      if (!state.apiKey) { showStatus('Set your API key first.', 'error', false); throw new Error('No API key'); }
       return fetch(API_ROOT + path, {
         method: 'POST',
         headers: { 'X-API-Key': state.apiKey, 'Content-Type': 'application/json' },
@@ -860,28 +832,47 @@
       }).then(r => r.json());
     }
 
-    // ── Search ──────────────────────────────────────────────────────────────────
-
     async function search() {
       const raw = document.getElementById('searchInput').value.trim();
       if (!raw) return;
       if (!state.apiKey) { showStatus('Set your API key first.', 'error', false); return; }
 
+      // Parse name#code
       let displayName = raw, displayNameCode = 0;
-      const hi = raw.lastIndexOf('#');
-      if (hi > 0) { displayName = raw.slice(0, hi); displayNameCode = parseInt(raw.slice(hi + 1)) || 0; }
+      const hashIdx = raw.lastIndexOf('#');
+      if (hashIdx > 0) {
+        displayName = raw.slice(0, hashIdx);
+        displayNameCode = parseInt(raw.slice(hashIdx + 1)) || 0;
+      }
 
       document.getElementById('resultsList').style.display = 'none';
       document.getElementById('profile-section').style.display = 'none';
       showStatus('Searching for guardian...', 'info', true);
 
       try {
-        const data = await apiPost('/Destiny2/SearchDestinyPlayerByBungieName/-1/', { displayName, displayNameCode });
-        if (data.ErrorCode !== 1) { showStatus('Error: ' + (data.Message || 'API error'), 'error', false); return; }
+        // Search across all platforms (-1)
+        const data = await apiPost('/Destiny2/SearchDestinyPlayerByBungieName/-1/', {
+          displayName, displayNameCode
+        });
+
+        if (data.ErrorCode !== 1) {
+          showStatus('Error: ' + (data.Message || 'API error'), 'error', false);
+          return;
+        }
+
         const results = data.Response || [];
-        if (!results.length) { showStatus('No guardians found. Check the name and code.', 'error', false); return; }
+        if (results.length === 0) {
+          showStatus('No guardians found. Check the name and code.', 'error', false);
+          return;
+        }
+
         hideStatus();
-        results.length === 1 ? loadProfile(results[0]) : renderResultsList(results);
+
+        if (results.length === 1) {
+          await loadProfile(results[0]);
+        } else {
+          renderResultsList(results);
+        }
       } catch (e) {
         showStatus('Request failed. Check your API key and network.', 'error', false);
       }
@@ -890,6 +881,7 @@
     function renderResultsList(results) {
       const list = document.getElementById('resultsList');
       list.innerHTML = '';
+
       results.forEach(r => {
         const item = document.createElement('div');
         item.className = 'result-item';
@@ -899,39 +891,48 @@
       </div>
       <div class="result-platform">${PLATFORM_NAMES[r.membershipType] || 'Platform ' + r.membershipType}</div>
     `;
-        item.onclick = () => { list.style.display = 'none'; loadProfile(r); };
+        item.onclick = () => loadProfile(r);
         list.appendChild(item);
       });
+
       list.style.display = 'block';
     }
 
-    // ── Profile ─────────────────────────────────────────────────────────────────
-
     async function loadProfile(player) {
+      document.getElementById('resultsList').style.display = 'none';
       showStatus('Loading guardian profile...', 'info', true);
+
       state.membershipId = player.membershipId;
       state.membershipType = player.membershipType;
       state.displayName = player.bungieGlobalDisplayName || player.displayName;
       state.displayNameCode = player.bungieGlobalDisplayNameCode;
 
       try {
-        const data = await apiFetch(`/Destiny2/${state.membershipType}/Profile/${state.membershipId}/?components=100,200`);
-        if (data.ErrorCode !== 1) { showStatus('Error loading profile: ' + (data.Message || 'unknown'), 'error', false); return; }
+        const data = await api(`/Destiny2/${state.membershipType}/Profile/${state.membershipId}/?components=100,200`);
+
+        if (data.ErrorCode !== 1) {
+          showStatus('Error loading profile: ' + (data.Message || 'unknown'), 'error', false);
+          return;
+        }
 
         const chars = data.Response.characters?.data;
         if (!chars) { showStatus('No characters found on this account.', 'error', false); return; }
 
         state.characters = Object.values(chars).sort((a, b) => new Date(b.dateLastPlayed) - new Date(a.dateLastPlayed));
 
+        // Render
         document.getElementById('guardianName').textContent = state.displayName;
         document.getElementById('guardianCode').textContent =
-          '#' + String(state.displayNameCode).padStart(4, '0') + ' · ' + (PLATFORM_NAMES[state.membershipType] || '');
+          '#' + String(state.displayNameCode).padStart(4, '0') +
+          ' · ' + (PLATFORM_NAMES[state.membershipType] || '');
 
         renderCharTabs();
         document.getElementById('profile-section').style.display = 'block';
         hideStatus();
 
-        if (state.characters.length) selectChar(state.characters[0].characterId);
+        if (state.characters.length > 0) {
+          selectChar(state.characters[0].characterId);
+        }
       } catch (e) {
         showStatus('Failed to load profile.', 'error', false);
       }
@@ -942,13 +943,14 @@
       tabs.innerHTML = '';
       state.characters.forEach(c => {
         const cls = CLASS_NAMES[c.classType] || 'Unknown';
+        const race = RACE_NAMES[c.raceType] || '';
         const tab = document.createElement('div');
         tab.className = 'char-tab';
         tab.dataset.charid = c.characterId;
         tab.innerHTML = `
       <div class="char-class ${cls.toLowerCase()}">${cls}</div>
       <div class="char-light">${c.light}</div>
-      <div class="char-race">${RACE_NAMES[c.raceType] || ''}</div>
+      <div class="char-race">${race}</div>
     `;
         tab.onclick = () => selectChar(c.characterId);
         tabs.appendChild(tab);
@@ -957,151 +959,84 @@
 
     function selectChar(charId) {
       state.activeCharId = charId;
-      document.querySelectorAll('.char-tab').forEach(t => t.classList.toggle('active', t.dataset.charid === charId));
-      loadAllHistory();
+      state.currentPage = 0;
+      document.querySelectorAll('.char-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.charid === charId);
+      });
+      loadActivities(0);
     }
 
-    // ── Fetch all raids + dungeons ───────────────────────────────────────────────
+    async function loadActivities(page) {
+      if (!state.activeCharId) return;
+      state.currentPage = page;
+      const mode = document.getElementById('modeFilter').value;
 
-    async function fetchAllPages(mode, label) {
-      const all = [];
-      let page = 0;
-      while (true) {
-        showStatus(`Scanning ${label}... (page ${page + 1})`, 'info', true);
-        const data = await apiFetch(
-          `/Destiny2/${state.membershipType}/Account/${state.membershipId}/Character/${state.activeCharId}/Stats/Activities/` +
-          `?count=100&mode=${mode}&page=${page}`
-        );
-        if (data.ErrorCode !== 1) break;
-        const acts = data.Response?.activities || [];
-        all.push(...acts);
-        if (acts.length < 100) break;
-        page++;
-        if (page > 49) break; // safety cap at 5000 per mode
-      }
-      return all;
-    }
-
-    async function resolveNames(hashes) {
-      // Fetch in batches of 8 (parallel within each batch)
-      for (let i = 0; i < hashes.length; i += 8) {
-        const batch = hashes.slice(i, i + 8).filter(h => !nameCache[h]);
-        if (!batch.length) continue;
-        showStatus(`Resolving activity names (${i + batch.length} / ${hashes.length})...`, 'info', true);
-        await Promise.all(batch.map(async hash => {
-          try {
-            const data = await apiFetch(`/Destiny2/Manifest/DestinyActivityDefinition/${hash}/`);
-            nameCache[hash] = (data.ErrorCode === 1)
-              ? (data.Response?.displayProperties?.name || 'Unknown Activity')
-              : 'Unknown Activity';
-          } catch { nameCache[hash] = 'Unknown Activity'; }
-        }));
-      }
-    }
-
-    async function loadAllHistory() {
-      document.getElementById('activityList').innerHTML =
-        '<div class="empty-state"><div class="spinner" style="margin:0 auto 16px;width:24px;height:24px;border-width:2px"></div><p>Scanning history...</p></div>';
-      document.getElementById('summaryBar').style.display = 'none';
-      document.getElementById('activityCount').textContent = '';
+      showStatus('Loading activities...', 'info', true);
+      document.getElementById('activityList').innerHTML = '<div class="empty-state"><div class="spinner" style="margin:0 auto 16px;width:24px;height:24px;border-width:2px"></div><p>Retrieving activity history...</p></div>';
+      document.getElementById('pagination').style.display = 'none';
 
       try {
-        // Fetch raids and dungeons sequentially (so progress messages make sense)
-        const raids = await fetchAllPages(4, 'raids');
-        const dungeons = await fetchAllPages(82, 'dungeons');
+        const data = await api(
+          `/Destiny2/${state.membershipType}/Account/${state.membershipId}/Character/${state.activeCharId}/Stats/Activities/` +
+          `?count=15&mode=${mode}&page=${page}`
+        );
 
-        // Combine and sort oldest → newest
-        const all = [...raids, ...dungeons].sort((a, b) => new Date(a.period) - new Date(b.period));
+        hideStatus();
 
-        if (!all.length) {
-          hideStatus();
-          document.getElementById('activityList').innerHTML =
-            '<div class="empty-state"><div class="icon">◈</div><p>No raids or dungeons found for this character</p></div>';
+        if (data.ErrorCode !== 1) {
+          showStatus('Error: ' + (data.Message || 'Failed to load activities'), 'error', false);
+          document.getElementById('activityList').innerHTML = '<div class="empty-state"><div class="icon">◈</div><p>Could not load activities</p></div>';
           return;
         }
 
-        // Resolve unique activity names
-        const uniqueHashes = [...new Set(all.map(a => a.activityDetails.referenceId))];
-        await resolveNames(uniqueHashes);
-
-        // Determine first clears: walk chronologically, mark first completed run per referenceId
-        const firstClearInstances = new Set();
-        const seenCleared = new Set();
-
-        all.forEach(act => {
-          const hash = act.activityDetails.referenceId;
-          const completed = (act.values?.completed?.basic?.value ?? 0) === 1;
-          if (completed && !seenCleared.has(hash)) {
-            firstClearInstances.add(act.activityDetails.instanceId);
-            seenCleared.add(hash);
-          }
-        });
-
-        // Build raid set for type-badge
-        const raidInstanceIds = new Set(raids.map(r => r.activityDetails.instanceId));
-
-        hideStatus();
-        renderActivities(all, firstClearInstances, raidInstanceIds);
+        const activities = data.Response?.activities || [];
+        renderActivities(activities);
       } catch (e) {
-        showStatus('Failed to load history. Check your API key.', 'error', false);
+        hideStatus();
+        showStatus('Failed to load activities.', 'error', false);
       }
     }
 
-    // ── Render ───────────────────────────────────────────────────────────────────
-
-    function renderActivities(activities, firstClearInstances, raidInstanceIds) {
+    function renderActivities(activities) {
       const list = document.getElementById('activityList');
-      list.innerHTML = '';
 
-      let totalClears = 0, totalFirstClears = 0, raidClears = 0, dungeonClears = 0;
+      if (activities.length === 0) {
+        list.innerHTML = '<div class="empty-state"><div class="icon">◈</div><p>No activities found for this filter</p></div>';
+        document.getElementById('pagination').style.display = 'none';
+        return;
+      }
+
+      list.innerHTML = '';
 
       activities.forEach((act, i) => {
         const v = act.values || {};
         const details = act.activityDetails || {};
-        const refHash = details.referenceId;
-        const instId = details.instanceId;
-        const isRaid = raidInstanceIds.has(instId);
-        const name = nameCache[refHash] || 'Unknown Activity';
-
-        const completed = (v.completed?.basic?.value ?? 0) === 1;
-        const isFirstClr = firstClearInstances.has(instId);
-        const duration = formatDuration(v.activityDurationSeconds?.basic?.value || 0);
-
+        const mode = details.mode || 0;
+        const modeName = MODE_NAMES[mode] || ('Mode ' + mode);
         const period = new Date(act.period);
         const dateStr = period.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
         const timeStr = period.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 
         const kills = Math.round(v.kills?.basic?.value || 0);
         const deaths = Math.round(v.deaths?.basic?.value || 0);
-        const kd = deaths > 0 ? (kills / deaths).toFixed(2) : kills > 0 ? '∞' : '—';
+        const assists = Math.round(v.assists?.basic?.value || 0);
+        const kd = deaths > 0 ? (kills / deaths).toFixed(2) : kills > 0 ? '∞' : '0.00';
+        const duration = formatDuration(v.activityDurationSeconds?.basic?.value || 0);
 
-        // Tally stats
-        if (completed) {
-          totalClears++;
-          if (isRaid) raidClears++; else dungeonClears++;
-        }
-        if (isFirstClr) totalFirstClears++;
-
-        const resultClass = completed ? 'ok' : 'dnf';
-        const resultLabel = completed ? 'Cleared' : 'DNF';
-
-        const itemClass = [
-          'activity-item',
-          completed ? 'completed' : 'dnf',
-          isFirstClr ? 'first-clear' : ''
-        ].join(' ').trim();
+        // Result
+        const standing = v.standing?.basic?.value; // 0 = victory, 1 = defeat
+        const completed = v.completed?.basic?.value;
+        let resultClass = 'completed', resultLabel = 'Completed';
+        if (standing === 0) { resultClass = 'win'; resultLabel = 'Victory'; }
+        else if (standing === 1) { resultClass = 'loss'; resultLabel = 'Defeat'; }
+        else if (completed === 0) { resultClass = 'loss'; resultLabel = 'DNF'; }
 
         const item = document.createElement('div');
-        item.className = itemClass;
-        item.style.animationDelay = Math.min(i * 0.015, 0.5) + 's';
-
+        item.className = `activity-item ${resultClass}`;
+        item.style.animationDelay = (i * 0.03) + 's';
         item.innerHTML = `
       <div class="act-main">
-        <div class="act-name-row">
-          <div class="act-name">${name}</div>
-          <div class="act-type-badge ${isRaid ? 'raid' : 'dungeon'}">${isRaid ? 'Raid' : 'Dungeon'}</div>
-          ${isFirstClr ? '<div class="first-clear-badge">First Clear</div>' : ''}
-        </div>
+        <div class="act-name">${modeName}</div>
         <div class="act-meta">
           <span>${dateStr} · ${timeStr}</span>
           <span>⏱ ${duration}</span>
@@ -1123,26 +1058,31 @@
         <div class="act-result ${resultClass}">${resultLabel}</div>
       </div>
     `;
-
         list.appendChild(item);
       });
 
-      // Update section title count
-      document.getElementById('activityCount').textContent = `${activities.length} runs`;
+      // Pagination
+      const pag = document.getElementById('pagination');
+      pag.style.display = 'flex';
+      document.getElementById('pageInfo').textContent = 'Page ' + (state.currentPage + 1);
+      document.getElementById('prevBtn').disabled = state.currentPage === 0;
+      document.getElementById('nextBtn').disabled = activities.length < 15;
+    }
 
-      // Update summary bar
-      document.getElementById('sumTotal').textContent = activities.length;
-      document.getElementById('sumClears').textContent = totalClears;
-      document.getElementById('sumFirstClears').textContent = totalFirstClears;
-      document.getElementById('sumRaids').textContent = raidClears;
-      document.getElementById('sumDungeons').textContent = dungeonClears;
-      document.getElementById('summaryBar').style.display = 'flex';
+    function changePage(dir) {
+      const next = state.currentPage + dir;
+      if (next < 0) return;
+      loadActivities(next);
+      window.scrollTo({ top: document.getElementById('activityList').offsetTop - 20, behavior: 'smooth' });
     }
 
     function formatDuration(seconds) {
       const m = Math.floor(seconds / 60);
       const s = Math.floor(seconds % 60);
-      if (m >= 60) { const h = Math.floor(m / 60); return `${h}h ${m % 60}m`; }
+      if (m >= 60) {
+        const h = Math.floor(m / 60);
+        return `${h}h ${m % 60}m`;
+      }
       return `${m}m ${String(s).padStart(2, '0')}s`;
     }
   </script>

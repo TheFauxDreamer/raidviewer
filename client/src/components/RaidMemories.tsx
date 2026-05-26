@@ -17,23 +17,8 @@ interface RaidMemory {
   totalClears: number;
 }
 
-const STORAGE_KEY = 'raidviewer-artwork';
-
-function loadArtwork(): Record<string, string> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveArtwork(data: Record<string, string>) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch {
-    // localStorage full or unavailable
-  }
+function artworkPath(slug: string): string {
+  return `/artwork/${slug}.jpg`;
 }
 
 function formatDate(isoStr: string): string {
@@ -46,16 +31,15 @@ function formatDate(isoStr: string): string {
 }
 
 export default function RaidMemories({ raids, playerName, onLoadFireteam }: Props) {
-  const [artwork, setArtwork] = useState<Record<string, string>>(loadArtwork);
   const [memories, setMemories] = useState<RaidMemory[]>([]);
   const [loadingMemories, setLoadingMemories] = useState(true);
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [imgErrors, setImgErrors] = useState<Set<string>>(new Set());
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Build memories: one per unique raid, using the first clear
   useEffect(() => {
     const build = async () => {
-      // Find first clear of each raid (raids are sorted newest-first, so iterate reversed)
       const firstClears = new Map<string, RaidActivity>();
       const clearCounts = new Map<string, number>();
 
@@ -91,24 +75,9 @@ export default function RaidMemories({ raids, playerName, onLoadFireteam }: Prop
     build();
   }, [raids, onLoadFireteam]);
 
-  const handleImageUpload = useCallback((raidName: string, file: File) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      const updated = { ...artwork, [getRaidSlug(raidName)]: dataUrl };
-      setArtwork(updated);
-      saveArtwork(updated);
-    };
-    reader.readAsDataURL(file);
-  }, [artwork]);
-
-  const handleDrop = useCallback((e: React.DragEvent, raidName: string) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
-      handleImageUpload(raidName, file);
-    }
-  }, [handleImageUpload]);
+  const handleImgError = useCallback((slug: string) => {
+    setImgErrors(prev => new Set(prev).add(slug));
+  }, []);
 
   const handleDownload = useCallback(async (memory: RaidMemory) => {
     setDownloading(memory.raidName);
@@ -116,18 +85,11 @@ export default function RaidMemories({ raids, playerName, onLoadFireteam }: Prop
     if (!canvas) return;
 
     const slug = getRaidSlug(memory.raidName);
-    const imgSrc = artwork[slug];
+    const imgSrc = artworkPath(slug);
 
-    if (!imgSrc) {
-      setDownloading(null);
-      return;
-    }
-
-    // Load the image
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
-      // Use a 16:9 aspect ratio
       const width = 1920;
       const height = 1080;
       canvas.width = width;
@@ -233,8 +195,12 @@ export default function RaidMemories({ raids, playerName, onLoadFireteam }: Prop
       }, 'image/png');
     };
 
+    img.onerror = () => {
+      setDownloading(null);
+    };
+
     img.src = imgSrc;
-  }, [artwork, playerName]);
+  }, [playerName]);
 
   if (loadingMemories) {
     return <div className="loading-bar">Building memories...</div>;
@@ -253,29 +219,29 @@ export default function RaidMemories({ raids, playerName, onLoadFireteam }: Prop
       <canvas ref={canvasRef} style={{ display: 'none' }} />
 
       <p className="memories-hint">
-        Upload artwork for each raid to create your personalised Destiny 2 legacy cards.
-        Images are stored locally in your browser.
+        Personalised legacy cards for each raid you've completed. Click <strong>Download</strong> to save.
       </p>
 
       <div className="memories-grid">
         {memories.map((memory) => {
           const slug = getRaidSlug(memory.raidName);
-          const hasArtwork = !!artwork[slug];
+          const hasError = imgErrors.has(slug);
 
           return (
             <div key={memory.raidName} className="memory-card">
-              <div
-                className={`memory-artwork ${hasArtwork ? 'has-image' : ''}`}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => handleDrop(e, memory.raidName)}
-              >
-                {hasArtwork ? (
-                  <img src={artwork[slug]} alt={memory.raidName} className="memory-img" />
-                ) : (
+              <div className="memory-artwork has-image">
+                {hasError ? (
                   <div className="memory-placeholder">
                     <span className="memory-placeholder-text">{memory.raidName}</span>
-                    <span className="memory-placeholder-hint">Drop artwork here</span>
+                    <span className="memory-placeholder-hint">Artwork missing — add {slug}.jpg to /artwork/</span>
                   </div>
+                ) : (
+                  <img
+                    src={artworkPath(slug)}
+                    alt={memory.raidName}
+                    className="memory-img"
+                    onError={() => handleImgError(slug)}
+                  />
                 )}
 
                 {/* Overlay info — bottom right */}
@@ -304,27 +270,13 @@ export default function RaidMemories({ raids, playerName, onLoadFireteam }: Prop
               </div>
 
               <div className="memory-actions">
-                <label className="memory-upload-btn">
-                  {hasArtwork ? 'Change artwork' : 'Upload artwork'}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="memory-file-input"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleImageUpload(memory.raidName, file);
-                    }}
-                  />
-                </label>
-                {hasArtwork && (
-                  <button
-                    className="memory-download-btn"
-                    onClick={() => handleDownload(memory)}
-                    disabled={downloading === memory.raidName}
-                  >
-                    {downloading === memory.raidName ? 'Saving...' : 'Download'}
-                  </button>
-                )}
+                <button
+                  className="memory-download-btn"
+                  onClick={() => handleDownload(memory)}
+                  disabled={downloading === memory.raidName}
+                >
+                  {downloading === memory.raidName ? 'Saving...' : 'Download'}
+                </button>
               </div>
             </div>
           );

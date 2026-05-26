@@ -832,26 +832,6 @@ a {
   gap: 0.5rem;
 }
 
-.memory-upload-btn {
-  display: inline-block;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  padding: 0.35rem 0.75rem;
-  color: var(--text-dim);
-  font-size: 0.75rem;
-  font-family: inherit;
-  cursor: pointer;
-}
-
-.memory-upload-btn:hover {
-  color: var(--text);
-  border-color: #555;
-}
-
-.memory-file-input {
-  display: none;
-}
-
 .memory-download-btn {
   background: var(--accent);
   color: #111;

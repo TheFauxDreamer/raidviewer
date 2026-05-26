@@ -1,0 +1,22 @@
+Place your raid artwork images here.
+
+File naming: use the raid slug + .jpg extension.
+
+Example:
+  last-wish.jpg
+  deep-stone-crypt.jpg
+  vault-of-glass.jpg
+  kings-fall.jpg
+  crotas-end.jpg
+  salvations-edge.jpg
+  garden-of-salvation.jpg
+  vow-of-the-disciple.jpg
+  root-of-nightmares.jpg
+  leviathan.jpg
+  leviathan-eater-of-worlds.jpg
+  leviathan-spire-of-stars.jpg
+  scourge-of-the-past.jpg
+  crown-of-sorrow.jpg
+  wrath-of-the-machine.jpg
+
+Recommended: 1920x1080 JPG, ~300-500KB each.

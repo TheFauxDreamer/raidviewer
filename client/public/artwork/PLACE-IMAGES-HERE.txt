@@ -1,0 +1,34 @@
+Place your raid & dungeon artwork images here.
+
+File naming: use the activity slug + .jpg extension.
+
+RAIDS:
+  last-wish.jpg
+  deep-stone-crypt.jpg
+  vault-of-glass.jpg
+  kings-fall.jpg
+  crotas-end.jpg
+  salvations-edge.jpg
+  garden-of-salvation.jpg
+  vow-of-the-disciple.jpg
+  root-of-nightmares.jpg
+  leviathan.jpg
+  leviathan-eater-of-worlds.jpg
+  leviathan-spire-of-stars.jpg
+  scourge-of-the-past.jpg
+  crown-of-sorrow.jpg
+  wrath-of-the-machine.jpg
+
+DUNGEONS:
+  shattered-throne.jpg
+  pit-of-heresy.jpg
+  prophecy.jpg
+  grasp-of-avarice.jpg
+  duality.jpg
+  spire-of-the-watcher.jpg
+  ghosts-of-the-deep.jpg
+  warlords-ruin.jpg
+  vespers-host.jpg
+  sundered-doctrine.jpg
+
+Recommended: 1920x1080 JPG, ~300-500KB each.

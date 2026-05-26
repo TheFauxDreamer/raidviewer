@@ -6,166 +6,244 @@ import RaidMemories from './components/RaidMemories';
 
 type ViewMode = 'timeline' | 'memories';
 
+const PLATFORM_NAMES: Record<number, string> = {
+  1: 'Xbox',
+  2: 'PlayStation',
+  3: 'Steam',
+  4: 'Battle.net',
+  5: 'Stadia',
+  10: 'Epic',
+};
+
+interface SelectableProfile {
+  membershipType: number;
+  membershipId: string;
+  displayName: string;
+  bungieGlobalDisplayNameCode: number;
+  iconPath: string;
+  platformName: string;
+  game: 'd2' | 'd1';
+  profileKey: string;
+}
+
+function parseBungieName(input: string): { name: string; code: number } | null {
+  const trimmed = input.trim();
+  const hashIndex = trimmed.lastIndexOf('#');
+  if (hashIndex === -1) {
+    return { name: trimmed, code: 0 };
+  }
+  const name = trimmed.substring(0, hashIndex).trim();
+  const codeStr = trimmed.substring(hashIndex + 1).trim();
+  const code = parseInt(codeStr, 10);
+  if (!name || isNaN(code)) return null;
+  return { name, code };
+}
+
+function getEmblemUrl(iconPath: string): string {
+  if (!iconPath) return '';
+  return `https://www.bungie.net${iconPath}`;
+}
+
+function profileKey(mt: number, mid: string): string {
+  return `${mt}-${mid}`;
+}
+
 export default function App() {
-  const [searchName, setSearchName] = useState('');
-  const [searchCode, setSearchCode] = useState('');
-  const [profiles, setProfiles] = useState<BungieProfile[]>([]);
-  const [selectedProfile, setSelectedProfile] = useState<BungieProfile | null>(null);
+  const [searchInput, setSearchInput] = useState('');
+  const [selectableProfiles, setSelectableProfiles] = useState<SelectableProfile[]>([]);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [raids, setRaids] = useState<RaidActivity[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [progress, setProgress] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('timeline');
+  const [discoveringLinked, setDiscoveringLinked] = useState(false);
+  const [activeSearchName, setActiveSearchName] = useState('');
 
   const handleSearch = useCallback(async () => {
-    if (!searchName.trim() || !searchCode.trim()) return;
-    setLoading(true);
-    setError('');
-    setProfiles([]);
-    setSelectedProfile(null);
-    setRaids([]);
-
-    try {
-      const code = parseInt(searchCode, 10);
-      if (isNaN(code)) {
-        setError('Please enter a valid Bungie name code (e.g., 1234)');
-        setLoading(false);
-        return;
-      }
-      const results = await searchPlayer(searchName.trim(), code);
-      if (results.length === 0) {
-        setError('No players found. Check the name and code.');
-      } else {
-        setProfiles(results);
-      }
-    } catch (e: any) {
-      setError(e.message || 'Search failed');
+    const parsed = parseBungieName(searchInput);
+    if (!parsed) {
+      setError('Enter a Bungie name like "Guardian#1234"');
+      return;
     }
-    setLoading(false);
-  }, [searchName, searchCode]);
+    if (parsed.code === 0) {
+      setError('Include the 4-digit code after # (e.g., Guardian#1234)');
+      return;
+    }
 
-  const handleSelectProfile = useCallback(async (profile: BungieProfile) => {
-    setSelectedProfile(profile);
-    setRaids([]);
     setLoading(true);
     setError('');
-    setProgress('Fetching characters...');
+    setSelectableProfiles([]);
+    setSelectedKeys(new Set());
+    setRaids([]);
 
     try {
-      const { characters } = await getProfile(profile.membershipType, profile.membershipId);
-      if (characters.length === 0) {
-        setError('No characters found on this account.');
+      const results = await searchPlayer(parsed.name, parsed.code);
+      if (results.length === 0) {
+        setError('No players found. Check the spelling and code.');
         setLoading(false);
         return;
       }
 
-      const allRaids: RaidActivity[] = [];
+      // Build initial selectable list from D2 search results
+      const initial: SelectableProfile[] = results.map((p) => ({
+        membershipType: p.membershipType,
+        membershipId: p.membershipId,
+        displayName: p.displayName,
+        bungieGlobalDisplayNameCode: p.bungieGlobalDisplayNameCode,
+        iconPath: p.iconPath,
+        platformName: PLATFORM_NAMES[p.membershipType] || `Platform ${p.membershipType}`,
+        game: 'd2' as const,
+        profileKey: profileKey(p.membershipType, p.membershipId),
+      }));
 
-      // --- Destiny 2 raids ---
-      for (const char of characters) {
-        setProgress(`Loading D2 raids for ${CLASS_NAMES[char.classType] || 'Character'}...`);
+      setSelectableProfiles(initial);
+      setActiveSearchName(`${parsed.name}#${parsed.code}`);
+      setLoading(false);
 
-        let page = 0;
-        let hasMore = true;
+      // Discover linked D1 profiles for each D2 result
+      setDiscoveringLinked(true);
+      const allProfiles = [...initial];
+      const seenKeys = new Set(initial.map(p => p.profileKey));
 
-        while (hasMore) {
-          const history = await getActivityHistory(
-            profile.membershipType,
-            profile.membershipId,
-            char.characterId,
-            page,
-            250
+      for (const p of results) {
+        try {
+          const linked = await getLinkedProfiles(p.membershipType, p.membershipId);
+          const d1Linked = (linked.Response?.profiles || []).filter(
+            (lp: any) => (lp.membershipType === 1 || lp.membershipType === 2)
           );
-
-          if (!history.Response?.activities || history.Response.activities.length === 0) {
-            hasMore = false;
-            break;
+          for (const d1p of d1Linked) {
+            const key = profileKey(d1p.membershipType, d1p.membershipId);
+            if (!seenKeys.has(key)) {
+              seenKeys.add(key);
+              allProfiles.push({
+                membershipType: d1p.membershipType,
+                membershipId: d1p.membershipId,
+                displayName: d1p.displayName || parsed.name,
+                bungieGlobalDisplayNameCode: d1p.bungieGlobalDisplayNameCode || parsed.code,
+                iconPath: d1p.iconPath || '',
+                platformName: PLATFORM_NAMES[d1p.membershipType] || `Platform ${d1p.membershipType}`,
+                game: 'd1' as const,
+                profileKey: key,
+              });
+            }
           }
-
-          for (const act of history.Response.activities) {
-            const directorHash = act.activityDetails?.directorActivityHash || 0;
-            const raidName = getRaidName(directorHash);
-
-            if (!directorHash || raidName.startsWith('Unknown')) continue;
-
-            const isCompleted = act.values?.completed?.basic?.value === 1 ||
-                                act.values?.completionReason?.basic?.value === 0;
-
-            allRaids.push({
-              instanceId: act.activityDetails.instanceId,
-              period: act.period,
-              activityHash: act.activityDetails.referenceId,
-              activityName: raidName,
-              directorActivityHash: directorHash,
-              origin: getRaidOrigin(directorHash),
-              mode: act.activityDetails.mode,
-              isCompleted,
-              kills: act.values?.kills?.basic?.value || 0,
-              deaths: act.values?.deaths?.basic?.value || 0,
-              assists: act.values?.assists?.basic?.value || 0,
-              timePlayedSeconds: act.values?.timePlayedSeconds?.basic?.value || 0,
-              completionReason: act.values?.completionReason?.basic?.value || -1,
-              standing: act.values?.standing?.basic?.value || 0,
-              playerCount: act.values?.playerCount?.basic?.value || 0,
-              fireteamMembers: [],
-              isFirstClear: false,
-            });
-          }
-
-          page++;
-          if (page > 20) hasMore = false;
+        } catch {
+          // skip profiles that fail
         }
       }
 
-      // --- Destiny 1 raids (via linked profiles) ---
-      try {
-        const linked = await getLinkedProfiles(profile.membershipType, profile.membershipId);
-        const d1Profiles = linked.Response?.profiles?.filter((p: any) =>
-          p.membershipType === 1 || p.membershipType === 2
-        ) || [];
+      setSelectableProfiles(allProfiles);
+      setDiscoveringLinked(false);
+    } catch (e: any) {
+      setError(e.message || 'Search failed');
+      setLoading(false);
+    }
+  }, [searchInput]);
 
-        for (const d1p of d1Profiles) {
-          setProgress(`Loading D1 raids...`);
+  const toggleProfile = useCallback((key: string) => {
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }, []);
 
+  const handleViewRaids = useCallback(async () => {
+    if (selectedKeys.size === 0) {
+      setError('Select at least one profile.');
+      return;
+    }
+
+    setRaids([]);
+    setLoading(true);
+    setError('');
+    setProgress('Fetching raids...');
+
+    const allRaids: RaidActivity[] = [];
+    const selected = selectableProfiles.filter(p => selectedKeys.has(p.profileKey));
+
+    try {
+      for (const sp of selected) {
+        if (sp.game === 'd2') {
+          // --- Destiny 2 raids ---
+          const { characters } = await getProfile(sp.membershipType, sp.membershipId);
+          for (const char of characters) {
+            setProgress(`Loading D2 raids (${sp.platformName}, ${CLASS_NAMES[char.classType] || 'Character'})...`);
+
+            let page = 0;
+            let hasMore = true;
+            while (hasMore) {
+              const history = await getActivityHistory(
+                sp.membershipType, sp.membershipId, char.characterId, page, 250
+              );
+              if (!history.Response?.activities || history.Response.activities.length === 0) {
+                hasMore = false;
+                break;
+              }
+              for (const act of history.Response.activities) {
+                const directorHash = act.activityDetails?.directorActivityHash || 0;
+                const raidName = getRaidName(directorHash);
+                if (!directorHash || raidName.startsWith('Unknown')) continue;
+                const isCompleted = act.values?.completed?.basic?.value === 1 ||
+                                    act.values?.completionReason?.basic?.value === 0;
+                allRaids.push({
+                  instanceId: act.activityDetails.instanceId,
+                  period: act.period,
+                  activityHash: act.activityDetails.referenceId,
+                  activityName: raidName,
+                  directorActivityHash: directorHash,
+                  origin: getRaidOrigin(directorHash),
+                  mode: act.activityDetails.mode,
+                  isCompleted,
+                  kills: act.values?.kills?.basic?.value || 0,
+                  deaths: act.values?.deaths?.basic?.value || 0,
+                  assists: act.values?.assists?.basic?.value || 0,
+                  timePlayedSeconds: act.values?.timePlayedSeconds?.basic?.value || 0,
+                  completionReason: act.values?.completionReason?.basic?.value || -1,
+                  standing: act.values?.standing?.basic?.value || 0,
+                  playerCount: act.values?.playerCount?.basic?.value || 0,
+                  fireteamMembers: [],
+                  isFirstClear: false,
+                });
+              }
+              page++;
+              if (page > 20) hasMore = false;
+            }
+          }
+        } else {
+          // --- Destiny 1 raids ---
+          setProgress(`Loading D1 raids (${sp.platformName})...`);
           try {
-            const d1Profile = await getD1Profile(d1p.membershipType, d1p.membershipId);
+            const d1Profile = await getD1Profile(sp.membershipType, sp.membershipId);
             const d1Chars = d1Profile.Response?.data?.characters || [];
-
             for (const d1Char of d1Chars) {
               const charId = d1Char.characterBase?.characterId;
               if (!charId) continue;
-
               let page = 0;
               let hasMore = true;
-
               while (hasMore) {
                 const history = await getD1ActivityHistory(
-                  d1p.membershipType,
-                  d1p.membershipId,
-                  charId,
-                  page,
-                  250
+                  sp.membershipType, sp.membershipId, charId, page, 250
                 );
-
                 if (!history.Response?.data?.activities || history.Response.data.activities.length === 0) {
                   hasMore = false;
                   break;
                 }
-
                 for (const act of history.Response.data.activities) {
-                  // D1 uses activityHash directly (not directorActivityHash)
                   const activityHash = act.activityHash || 0;
                   const raidName = getRaidName(activityHash);
-
                   if (!activityHash || raidName.startsWith('Unknown')) continue;
-
                   const isCompleted = act.values?.completed?.basic?.value === 1 ||
                                       act.values?.completionReason?.basic?.value === 0;
-
                   allRaids.push({
                     instanceId: act.activityDetails?.instanceId || '',
                     period: act.period,
-                    activityHash: activityHash,
+                    activityHash,
                     activityName: raidName,
                     directorActivityHash: activityHash,
                     origin: getRaidOrigin(activityHash),
@@ -182,22 +260,18 @@ export default function App() {
                     isFirstClear: false,
                   });
                 }
-
                 page++;
                 if (page > 20) hasMore = false;
               }
             }
           } catch {
-            // D1 profile may not exist for this linked account — skip silently
+            // D1 profile may not exist
           }
         }
-      } catch {
-        // Linked profiles may fail — skip D1 data
       }
 
       // Sort oldest-first to find the true first clear of each raid
       allRaids.sort((a, b) => new Date(a.period).getTime() - new Date(b.period).getTime());
-
       const firstClearMap = new Map<string, boolean>();
       for (const raid of allRaids) {
         if (raid.isCompleted && !firstClearMap.has(raid.activityName)) {
@@ -205,7 +279,6 @@ export default function App() {
           firstClearMap.set(raid.activityName, true);
         }
       }
-
       // Sort back to newest-first for display
       allRaids.sort((a, b) => new Date(b.period).getTime() - new Date(a.period).getTime());
 
@@ -215,17 +288,14 @@ export default function App() {
       setError(e.message || 'Failed to load raid history');
     }
     setLoading(false);
-  }, []);
+  }, [selectedKeys, selectableProfiles]);
 
   const handleLoadFireteam = useCallback(async (instanceId: string, origin?: string) => {
     try {
-      // Use D1 PGCR endpoint for D1 raids
       const pgcr = origin === 'd1'
         ? await getD1PGCR(instanceId)
         : await getPGCR(instanceId);
-
       const entries = pgcr.Response?.entries || pgcr.Response?.data?.entries || [];
-
       const members: FireteamMember[] = entries.map((entry: any) => ({
         displayName: entry.player?.destinyUserInfo?.displayName || entry.player?.destinyUserInfo?.bungieGlobalDisplayName || 'Unknown',
         bungieGlobalDisplayNameCode: entry.player?.destinyUserInfo?.bungieGlobalDisplayNameCode || 0,
@@ -240,7 +310,6 @@ export default function App() {
         timePlayedSeconds: entry.values?.timePlayedSeconds?.basic?.value || 0,
         emblemIcon: entry.player?.destinyUserInfo?.iconPath || '',
       }));
-
       return members;
     } catch {
       return null;
@@ -248,44 +317,39 @@ export default function App() {
   }, []);
 
   const handleBack = () => {
-    setSelectedProfile(null);
     setRaids([]);
-    setProfiles([]);
+    setSelectableProfiles([]);
+    setSelectedKeys(new Set());
+    setActiveSearchName('');
   };
+
+  const hasResults = selectableProfiles.length > 0;
+  const d2Profiles = selectableProfiles.filter(p => p.game === 'd2');
+  const d1Profiles = selectableProfiles.filter(p => p.game === 'd1');
 
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Destiny 2 Raid Viewer</h1>
-        <p className="subtitle">Your complete raid history in chronological order</p>
+        <h1>Destiny Raid Viewer</h1>
+        <p className="subtitle">Your complete D1 & D2 raid history in chronological order</p>
       </header>
 
       <main className="app-main">
-        {!selectedProfile ? (
+        {raids.length === 0 && !loading ? (
           <div className="search-section">
             <div className="search-card">
               <h2>Look up a player</h2>
               <p className="search-hint">
-                Enter a Bungie name (e.g., Guardian#1234)
+                Enter a Bungie name with its code (e.g., Guardian#1234)
               </p>
               <div className="search-inputs">
                 <input
                   type="text"
-                  placeholder="Bungie Name"
-                  value={searchName}
-                  onChange={(e) => setSearchName(e.target.value)}
+                  placeholder="Guardian#1234"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  className="search-input"
-                />
-                <span className="search-separator">#</span>
-                <input
-                  type="text"
-                  placeholder="1234"
-                  value={searchCode}
-                  onChange={(e) => setSearchCode(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  className="search-input search-code"
-                  maxLength={5}
+                  className="search-input search-single"
                 />
                 <button onClick={handleSearch} disabled={loading} className="search-btn">
                   {loading ? 'Searching...' : 'Search'}
@@ -294,29 +358,84 @@ export default function App() {
 
               {error && <div className="error-msg">{error}</div>}
 
-              {profiles.length > 0 && (
-                <div className="profile-list">
-                  <h3>Select platform:</h3>
-                  {profiles.map((p) => (
-                    <button
-                      key={`${p.membershipType}-${p.membershipId}`}
-                      className="profile-btn"
-                      onClick={() => handleSelectProfile(p)}
-                    >
-                      <span className="platform-badge">
-                        {p.membershipType === 1 ? 'Xbox' :
-                         p.membershipType === 2 ? 'PlayStation' :
-                         p.membershipType === 3 ? 'Steam' :
-                         p.membershipType === 4 ? 'Battle.net' :
-                         p.membershipType === 5 ? 'Stadia' :
-                         p.membershipType === 10 ? 'Epic' :
-                         `Platform ${p.membershipType}`}
-                      </span>
-                      <span className="profile-name">
-                        {p.displayName}#{p.bungieGlobalDisplayNameCode}
-                      </span>
-                    </button>
-                  ))}
+              {hasResults && (
+                <div className="profile-selection">
+                  <div className="profile-selection-header">
+                    <h3>Select profiles to include</h3>
+                    {discoveringLinked && (
+                      <span className="discovering-hint">Discovering linked D1 accounts...</span>
+                    )}
+                  </div>
+                  <p className="selection-hint">
+                    Check all the accounts you want raid data from. D1 and D2 raids will be merged into one timeline.
+                  </p>
+
+                  {d2Profiles.length > 0 && (
+                    <>
+                      <h4 className="profile-group-label">Destiny 2</h4>
+                      {d2Profiles.map((p) => {
+                        const emblemUrl = getEmblemUrl(p.iconPath);
+                        const checked = selectedKeys.has(p.profileKey);
+                        return (
+                          <label key={p.profileKey} className={`profile-checkbox ${checked ? 'checked' : ''}`}>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleProfile(p.profileKey)}
+                              className="checkbox-input"
+                            />
+                            {emblemUrl && (
+                              <img src={emblemUrl} alt="" className="profile-emblem" loading="lazy" />
+                            )}
+                            <span className="profile-info">
+                              <span className="profile-name">
+                                {p.displayName}#{p.bungieGlobalDisplayNameCode}
+                              </span>
+                              <span className="profile-platform">{p.platformName}</span>
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </>
+                  )}
+
+                  {d1Profiles.length > 0 && (
+                    <>
+                      <h4 className="profile-group-label">Destiny 1 (linked)</h4>
+                      {d1Profiles.map((p) => {
+                        const emblemUrl = getEmblemUrl(p.iconPath);
+                        const checked = selectedKeys.has(p.profileKey);
+                        return (
+                          <label key={p.profileKey} className={`profile-checkbox ${checked ? 'checked' : ''}`}>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleProfile(p.profileKey)}
+                              className="checkbox-input"
+                            />
+                            {emblemUrl && (
+                              <img src={emblemUrl} alt="" className="profile-emblem" loading="lazy" />
+                            )}
+                            <span className="profile-info">
+                              <span className="profile-name">
+                                {p.displayName}#{p.bungieGlobalDisplayNameCode}
+                              </span>
+                              <span className="profile-platform">{p.platformName}</span>
+                            </span>
+                            <span className="game-badge d1-badge">D1</span>
+                          </label>
+                        );
+                      })}
+                    </>
+                  )}
+
+                  <button
+                    onClick={handleViewRaids}
+                    disabled={selectedKeys.size === 0 || loading}
+                    className="view-raids-btn"
+                  >
+                    {loading ? 'Loading...' : `View Raids (${selectedKeys.size} profile${selectedKeys.size !== 1 ? 's' : ''} selected)`}
+                  </button>
                 </div>
               )}
             </div>
@@ -326,7 +445,7 @@ export default function App() {
             <div className="results-header">
               <button onClick={handleBack} className="back-btn">← Back</button>
               <h2>
-                {selectedProfile.displayName}#{selectedProfile.bungieGlobalDisplayNameCode}
+                {activeSearchName}
                 <span className="raid-count">{raids.length} raids</span>
               </h2>
               <div className="view-toggle">
@@ -348,16 +467,9 @@ export default function App() {
             {loading && progress && <div className="loading-bar">{progress}</div>}
 
             {viewMode === 'timeline' ? (
-              <RaidTimeline
-                raids={raids}
-                onLoadFireteam={handleLoadFireteam}
-              />
+              <RaidTimeline raids={raids} onLoadFireteam={handleLoadFireteam} />
             ) : (
-              <RaidMemories
-                raids={raids}
-                playerName={`${selectedProfile.displayName}#${selectedProfile.bungieGlobalDisplayNameCode}`}
-                onLoadFireteam={handleLoadFireteam}
-              />
+              <RaidMemories raids={raids} playerName={activeSearchName} onLoadFireteam={handleLoadFireteam} />
             )}
           </div>
         )}

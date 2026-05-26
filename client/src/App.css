@@ -123,14 +123,9 @@ a {
   color: var(--text-muted);
 }
 
-.search-code {
-  max-width: 80px;
-  text-align: center;
-}
-
-.search-separator {
-  color: var(--text-muted);
+.search-single {
   font-size: 1rem;
+  padding: 0.6rem 0.85rem;
 }
 
 .search-btn {
@@ -187,20 +182,146 @@ a {
   font-family: inherit;
   cursor: pointer;
   margin-bottom: 0.35rem;
+  text-align: left;
 }
 
 .profile-btn:hover {
   border-color: var(--accent);
 }
 
-.platform-badge {
-  font-size: 0.8rem;
-  color: var(--text-dim);
-  white-space: nowrap;
+.profile-emblem {
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  background: var(--bg-card);
+}
+
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
 }
 
 .profile-name {
   font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.profile-platform {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+/* ===== Multi-Select Profile List ===== */
+.profile-selection {
+  margin-top: 1.25rem;
+}
+
+.profile-selection-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.profile-selection-header h3 {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.discovering-hint {
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+
+.selection-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.profile-group-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0.75rem 0 0.35rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 0.55rem 0.65rem;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-family: inherit;
+  cursor: pointer;
+  margin-bottom: 0.3rem;
+  text-align: left;
+}
+
+.profile-checkbox:hover {
+  border-color: #555;
+}
+
+.profile-checkbox.checked {
+  border-color: var(--accent);
+  background: rgba(200, 168, 78, 0.06);
+}
+
+.checkbox-input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.game-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 0.1rem 0.35rem;
+  border: 1px solid;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.game-badge.d1-badge {
+  color: #8ab4d8;
+  background: rgba(138, 180, 216, 0.15);
+  border-color: rgba(138, 180, 216, 0.35);
+}
+
+.view-raids-btn {
+  display: block;
+  width: 100%;
+  margin-top: 1rem;
+  background: var(--accent);
+  color: #111;
+  border: none;
+  padding: 0.65rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.view-raids-btn:hover:not(:disabled) {
+  background: #d4b45a;
+}
+
+.view-raids-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 /* ===== Info Card ===== */

@@ -7,6 +7,8 @@ export interface BungieProfile {
   membershipId: string;
   displayName: string;
   bungieGlobalDisplayNameCode: number;
+  iconPath: string;
+  crossSaveOverride: number;
 }
 
 export interface CharacterInfo {
@@ -63,8 +65,10 @@ export async function searchPlayer(
     return data.Response.map((p: any) => ({
       membershipType: p.membershipType,
       membershipId: p.membershipId,
-      displayName: p.displayName,
-      bungieGlobalDisplayNameCode: p.bungieGlobalDisplayNameCode,
+      displayName: p.displayName || p.bungieGlobalDisplayName || '',
+      bungieGlobalDisplayNameCode: p.bungieGlobalDisplayNameCode || displayNameCode,
+      iconPath: p.iconPath || '',
+      crossSaveOverride: p.crossSaveOverride || 0,
     }));
   }
   return [];

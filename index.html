@@ -1029,7 +1029,7 @@
         const seenCleared = new Set();
 
         all.forEach(act => {
-          const hash = act.activityDetails.referenceId;
+          const hash = act.activityDetails.directorActivityHash;
           const completed = (act.values?.completed?.basic?.value ?? 0) === 1;
           if (completed && !seenCleared.has(hash)) {
             firstClearInstances.add(act.activityDetails.instanceId);

@@ -676,197 +676,6 @@
         display: none;
       }
     }
-
-    /* ── Solo filter toggle ── */
-    .filter-bar {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
-      flex-wrap: wrap;
-    }
-
-    .filter-toggle {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      user-select: none;
-      font-size: 11px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--muted);
-      transition: color 0.2s;
-    }
-
-    .filter-toggle:hover { color: var(--text); }
-
-    .toggle-track {
-      width: 32px;
-      height: 18px;
-      background: var(--border);
-      border-radius: 9px;
-      position: relative;
-      transition: background 0.2s;
-      flex-shrink: 0;
-    }
-
-    .toggle-track.on { background: var(--accent2); }
-
-    .toggle-thumb {
-      width: 12px;
-      height: 12px;
-      background: #fff;
-      border-radius: 50%;
-      position: absolute;
-      top: 3px;
-      left: 3px;
-      transition: left 0.2s;
-    }
-
-    .toggle-track.on .toggle-thumb { left: 17px; }
-
-    /* ── Expandable fireteam panel ── */
-    .activity-item {
-      cursor: pointer;
-    }
-
-    .activity-item.expanded {
-      background: var(--surface2);
-    }
-
-    .activity-expand-icon {
-      font-size: 10px;
-      color: var(--muted);
-      margin-left: auto;
-      padding-left: 10px;
-      transition: transform 0.2s;
-      align-self: center;
-      flex-shrink: 0;
-    }
-
-    .activity-item.expanded .activity-expand-icon {
-      transform: rotate(180deg);
-    }
-
-    .fireteam-panel {
-      display: none;
-      grid-column: 1 / -1;
-      border-top: 1px solid var(--border);
-      margin-top: 8px;
-      padding-top: 12px;
-    }
-
-    .activity-item.expanded .fireteam-panel {
-      display: block;
-    }
-
-    .fireteam-loading {
-      font-size: 11px;
-      font-family: 'Share Tech Mono', monospace;
-      color: var(--muted);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 4px 0 8px;
-    }
-
-    .fireteam-label {
-      font-size: 10px;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 8px;
-    }
-
-    .fireteam-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .fireteam-member {
-      display: grid;
-      grid-template-columns: 1fr repeat(4, auto);
-      gap: 8px 16px;
-      align-items: center;
-      padding: 6px 10px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      font-size: 12px;
-      font-family: 'Share Tech Mono', monospace;
-    }
-
-    .fireteam-member.is-guardian {
-      border-color: var(--accent2);
-      background: rgba(75, 143, 200, 0.05);
-    }
-
-    .member-name {
-      color: var(--ghost);
-      font-size: 13px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .fireteam-member.is-guardian .member-name {
-      color: var(--accent2);
-    }
-
-    .member-stat {
-      text-align: right;
-      display: flex;
-      flex-direction: column;
-      gap: 1px;
-    }
-
-    .member-stat-val {
-      color: var(--text);
-      font-weight: 600;
-    }
-
-    .member-stat-lbl {
-      font-size: 9px;
-      color: var(--muted);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
-
-    .member-completed {
-      font-size: 9px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      padding: 1px 6px;
-      border: 1px solid;
-    }
-
-    .member-completed.ok {
-      color: var(--accent2);
-      border-color: var(--accent2);
-      background: rgba(75, 143, 200, 0.08);
-    }
-
-    .member-completed.dnf {
-      color: var(--danger);
-      border-color: var(--danger);
-      background: rgba(200, 75, 75, 0.08);
-    }
-
-    .fireteam-error {
-      font-size: 11px;
-      font-family: 'Share Tech Mono', monospace;
-      color: var(--danger);
-      padding: 4px 0;
-    }
-
-    @media (max-width: 600px) {
-      .fireteam-member {
-        grid-template-columns: 1fr repeat(3, auto);
-      }
-      .member-stat:nth-child(4) { display: none; }
-    }
-  
   </style>
 </head>
 
@@ -944,15 +753,7 @@
         </div>
       </div>
 
-      <div class="filter-bar" id="filterBar" style="display:none;">
-        <label class="filter-toggle" onclick="toggleSoloFilter()">
-          <div class="toggle-track" id="soloToggleTrack">
-            <div class="toggle-thumb"></div>
-          </div>
-          Hide solo runs
-        </label>
-        <button id="downloadBtn" class="secondary" onclick="downloadData()" style="margin-left:auto;">⬇ Download Raw Data</button>
-      </div>
+      <button id="downloadBtn" class="secondary" onclick="downloadData()" style="display:none; margin-bottom:12px;">⬇ Download Raw Data</button>
 
       <div class="activity-list" id="activityList">
         <div class="empty-state">
@@ -1147,7 +948,7 @@
       document.getElementById('activityList').innerHTML =
         '<div class="empty-state"><div class="spinner" style="margin:0 auto 16px;width:24px;height:24px;border-width:2px"></div><p>Scanning history...</p></div>';
       document.getElementById('summaryBar').style.display = 'none';
-      document.getElementById('filterBar').style.display = 'none';
+      document.getElementById('downloadBtn').style.display = 'none';
       document.getElementById('activityCount').textContent = '';
 
       try {
@@ -1194,106 +995,6 @@
       } catch (e) {
         showStatus('Failed to load history. Check your API key.', 'error', false);
       }
-    }
-
-    // ── Solo filter ──────────────────────────────────────────────────────────────
-
-    let hideSolo = false;
-
-    function toggleSoloFilter() {
-      hideSolo = !hideSolo;
-      const track = document.getElementById('soloToggleTrack');
-      track.classList.toggle('on', hideSolo);
-      if (state.renderedActivities) {
-        renderActivities(
-          state.renderedActivities,
-          state.renderedFirstClears,
-          state.renderedRaidIds
-        );
-      }
-    }
-
-    // ── Fireteam expand ───────────────────────────────────────────────────────────
-
-    // Cache fetched fireteam data: instanceId → array of player entries
-    const fireteamCache = {};
-
-    async function toggleActivity(item, instanceId) {
-      const isExpanded = item.classList.contains('expanded');
-      // Collapse any other open item
-      document.querySelectorAll('.activity-item.expanded').forEach(el => el.classList.remove('expanded'));
-      if (isExpanded) return; // was open — just close it
-
-      item.classList.add('expanded');
-      const panel = item.querySelector('.fireteam-panel');
-
-      if (fireteamCache[instanceId] !== undefined) {
-        renderFireteam(panel, fireteamCache[instanceId]);
-        return;
-      }
-
-      panel.innerHTML = '<div class="fireteam-loading"><div class="spinner"></div>Loading fireteam...</div>';
-
-      try {
-        const data = await apiFetch(`/Destiny2/Stats/PostGameCarnageReport/${instanceId}/`);
-        if (data.ErrorCode !== 1) throw new Error(data.Message || 'API error');
-        const entries = data.Response?.entries || [];
-        fireteamCache[instanceId] = entries;
-        renderFireteam(panel, entries);
-      } catch (e) {
-        panel.innerHTML = `<div class="fireteam-error">Failed to load fireteam: ${e.message}</div>`;
-        fireteamCache[instanceId] = [];
-      }
-    }
-
-    function renderFireteam(panel, entries) {
-      if (!entries.length) {
-        panel.innerHTML = '<div class="fireteam-error">No fireteam data available.</div>';
-        return;
-      }
-
-      // Sort: guardian first, then by score desc
-      const sorted = [...entries].sort((a, b) => {
-        const aIsMe = a.player?.destinyUserInfo?.membershipId === state.membershipId;
-        const bIsMe = b.player?.destinyUserInfo?.membershipId === state.membershipId;
-        if (aIsMe) return -1;
-        if (bIsMe) return 1;
-        return (b.score?.basic?.value || 0) - (a.score?.basic?.value || 0);
-      });
-
-      panel.innerHTML = `
-        <div class="fireteam-label">Fireteam · ${entries.length} guardian${entries.length !== 1 ? 's' : ''}</div>
-        <div class="fireteam-grid">
-          ${sorted.map(e => {
-            const info    = e.player?.destinyUserInfo || {};
-            const vals    = e.values || {};
-            const isMe    = info.membershipId === state.membershipId;
-            const name    = (info.bungieGlobalDisplayName || info.displayName || 'Unknown') +
-                            (info.bungieGlobalDisplayNameCode ? '#' + String(info.bungieGlobalDisplayNameCode).padStart(4,'0') : '');
-            const kills   = Math.round(vals.kills?.basic?.value || 0);
-            const deaths  = Math.round(vals.deaths?.basic?.value || 0);
-            const assists = Math.round(vals.assists?.basic?.value || 0);
-            const kd      = deaths > 0 ? (kills / deaths).toFixed(2) : kills > 0 ? '∞' : '—';
-            const done    = (vals.completed?.basic?.value ?? 0) === 1;
-            return \`
-              <div class="fireteam-member\${isMe ? ' is-guardian' : ''}">
-                <div class="member-name">\${name}\${isMe ? ' ◀' : ''}</div>
-                <div class="member-stat">
-                  <div class="member-stat-val">\${kills}</div>
-                  <div class="member-stat-lbl">Kills</div>
-                </div>
-                <div class="member-stat">
-                  <div class="member-stat-val">\${deaths}</div>
-                  <div class="member-stat-lbl">Deaths</div>
-                </div>
-                <div class="member-stat">
-                  <div class="member-stat-val">\${kd}</div>
-                  <div class="member-stat-lbl">K/D</div>
-                </div>
-                <div class="member-completed \${done ? 'ok' : 'dnf'}">\${done ? 'Cleared' : 'DNF'}</div>
-              </div>\`;
-          }).join('')}
-        </div>`;
     }
 
     // ── Download ─────────────────────────────────────────────────────────────────
@@ -1347,27 +1048,12 @@
     // ── Render ───────────────────────────────────────────────────────────────────
 
     function renderActivities(activities, firstClearInstances, raidInstanceIds) {
-      // Persist for re-render when filter toggles
-      state.renderedActivities  = activities;
-      state.renderedFirstClears = firstClearInstances;
-      state.renderedRaidIds     = raidInstanceIds;
-
-      // Apply solo filter
-      const filtered = hideSolo
-        ? activities.filter(act => {
-            const cached = fireteamCache[act.activityDetails.instanceId];
-            // If not yet fetched we don't know — include it (conservative)
-            if (!cached) return true;
-            return cached.length > 1;
-          })
-        : activities;
-
       const list = document.getElementById('activityList');
       list.innerHTML = '';
 
       let totalClears = 0, totalFirstClears = 0, raidClears = 0, dungeonClears = 0;
 
-      filtered.forEach((act, i) => {
+      activities.forEach((act, i) => {
         const v = act.values || {};
         const details = act.activityDetails || {};
         const refHash = details.referenceId;
@@ -1433,26 +1119,23 @@
           <div class="stat-lbl">K/D</div>
         </div>
         <div class="act-result ${resultClass}">${resultLabel}</div>
-        <div class="activity-expand-icon">▼</div>
       </div>
-      <div class="fireteam-panel"></div>
     `;
 
-        item.onclick = () => toggleActivity(item, instId);
         list.appendChild(item);
       });
 
       // Update section title count
-      document.getElementById('activityCount').textContent = `${filtered.length} runs`;
+      document.getElementById('activityCount').textContent = `${activities.length} runs`;
 
       // Update summary bar
-      document.getElementById('sumTotal').textContent = filtered.length;
+      document.getElementById('sumTotal').textContent = activities.length;
       document.getElementById('sumClears').textContent = totalClears;
       document.getElementById('sumFirstClears').textContent = totalFirstClears;
       document.getElementById('sumRaids').textContent = raidClears;
       document.getElementById('sumDungeons').textContent = dungeonClears;
       document.getElementById('summaryBar').style.display = 'flex';
-      document.getElementById('filterBar').style.display = 'flex';
+      document.getElementById('downloadBtn').style.display = 'inline-block';
     }
 
     function formatDuration(seconds) {

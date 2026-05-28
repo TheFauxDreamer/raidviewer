@@ -267,6 +267,14 @@
       color: var(--ghost);
     }
 
+    .result-platforms {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
     .result-code {
       color: var(--muted);
       font-family: 'Share Tech Mono', monospace;
@@ -1053,34 +1061,37 @@
       const hasCode = hi > 0 && /^\d{1,4}$/.test(raw.slice(hi + 1).trim());
 
       try {
+        // results: array of objects with { membershipId, membershipType,
+        //   bungieGlobalDisplayName, bungieGlobalDisplayNameCode, allMemberships? }
         let results = [];
 
         if (hasCode) {
-          // Exact match — fast path using the precise endpoint
+          // Exact match — one entry per platform the player is on
           const displayName = raw.slice(0, hi);
           const displayNameCode = parseInt(raw.slice(hi + 1)) || 0;
           const data = await apiPost('/Destiny2/SearchDestinyPlayerByBungieName/-1/', { displayName, displayNameCode });
           if (data.ErrorCode !== 1) { showStatus('Error: ' + (data.Message || 'API error'), 'error', false); return; }
           results = data.Response || [];
         } else {
-          // No code — prefix search across all pages (up to 3) to find matching names
-          const prefix = raw;
+          // Prefix search — one entry per unique Bungie user
           let page = 0;
           while (page < 3) {
-            const data = await apiPost(`/User/Search/GlobalName/${page}/`, { displayNamePrefix: prefix });
+            const data = await apiPost(`/User/Search/GlobalName/${page}/`, { displayNamePrefix: raw });
             if (data.ErrorCode !== 1) break;
             const users = data.Response?.searchResults || [];
-            // Each user may have multiple destinyMemberships — flatten into result-list entries
             for (const u of users) {
-              for (const m of (u.destinyMemberships || [])) {
-                results.push({
-                  ...m,
-                  bungieGlobalDisplayName:     u.bungieGlobalDisplayName,
-                  bungieGlobalDisplayNameCode: u.bungieGlobalDisplayNameCode,
-                });
-              }
+              const memberships = u.destinyMemberships || [];
+              if (!memberships.length) continue;
+              // Prefer the cross-save override membership, else the first one
+              const primary = memberships.find(m => m.membershipType === m.crossSaveOverride)
+                           || memberships[0];
+              results.push({
+                ...primary,
+                bungieGlobalDisplayName:     u.bungieGlobalDisplayName,
+                bungieGlobalDisplayNameCode: u.bungieGlobalDisplayNameCode,
+                allMemberships:              memberships,
+              });
             }
-            // Stop early if there are fewer than 25 results (last page)
             if (users.length < 25) break;
             page++;
           }
@@ -1092,7 +1103,8 @@
         }
 
         hideStatus();
-        results.length === 1 ? loadProfile(results[0]) : renderResultsList(results);
+        // Always show the list so the user can confirm or pick the right account
+        renderResultsList(results);
       } catch (e) {
         showStatus('Request failed. Check your connection.', 'error', false);
       }
@@ -1109,6 +1121,13 @@
           ? '#' + String(r.bungieGlobalDisplayNameCode).padStart(4, '0')
           : '';
         const emblemId = `emblem-${r.membershipType}-${r.membershipId}`;
+
+        // Show all platforms this user plays on (cross-save aware)
+        const platforms = (r.allMemberships || [r])
+          .map(m => PLATFORM_NAMES[m.membershipType] || ('Platform ' + m.membershipType))
+          .filter((v, i, a) => a.indexOf(v) === i) // dedupe
+          .join(' · ');
+
         item.innerHTML = `
           <div class="result-emblem" id="${emblemId}">
             <div class="result-emblem-placeholder">◈</div>
@@ -1116,8 +1135,8 @@
           </div>
           <div style="flex:1; min-width:0; padding: 0 12px;">
             <div class="result-name">${r.bungieGlobalDisplayName || r.displayName}<span class="result-code">${code}</span></div>
+            <div class="result-platforms">${platforms}</div>
           </div>
-          <div class="result-platform">${PLATFORM_NAMES[r.membershipType] || 'Platform ' + r.membershipType}</div>
         `;
         item.onclick = () => { list.style.display = 'none'; loadProfile(r); };
         list.appendChild(item);

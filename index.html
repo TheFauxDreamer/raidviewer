@@ -891,11 +891,11 @@
 <div class="search-section">
       <label class="search-label">Search Guardian</label>
       <div class="search-row">
-        <input type="text" id="searchInput" placeholder="BungieName#1234"
+        <input type="text" id="searchInput" placeholder="BungieName or BungieName#1234"
           onkeydown="if(event.key==='Enter') search()" />
         <button id="searchBtn" onclick="search()">Search</button>
       </div>
-      <div class="search-hint">Enter the guardian's Bungie name with their numeric code</div>
+      <div class="search-hint">Search by name alone or include #code to find an exact match</div>
     </div>
 
     <div class="status-bar" id="statusBar">
@@ -1011,23 +1011,56 @@
       const raw = document.getElementById('searchInput').value.trim();
       if (!raw) return;
 
-      let displayName = raw, displayNameCode = 0;
-      const hi = raw.lastIndexOf('#');
-      if (hi > 0) { displayName = raw.slice(0, hi); displayNameCode = parseInt(raw.slice(hi + 1)) || 0; }
-
       document.getElementById('resultsList').style.display = 'none';
       document.getElementById('profile-section').style.display = 'none';
       showStatus('Searching for guardian...', 'info', true);
 
+      const hi = raw.lastIndexOf('#');
+      const hasCode = hi > 0 && /^\d{1,4}$/.test(raw.slice(hi + 1).trim());
+
       try {
-        const data = await apiPost('/Destiny2/SearchDestinyPlayerByBungieName/-1/', { displayName, displayNameCode });
-        if (data.ErrorCode !== 1) { showStatus('Error: ' + (data.Message || 'API error'), 'error', false); return; }
-        const results = data.Response || [];
-        if (!results.length) { showStatus('No guardians found. Check the name and code.', 'error', false); return; }
+        let results = [];
+
+        if (hasCode) {
+          // Exact match — fast path using the precise endpoint
+          const displayName = raw.slice(0, hi);
+          const displayNameCode = parseInt(raw.slice(hi + 1)) || 0;
+          const data = await apiPost('/Destiny2/SearchDestinyPlayerByBungieName/-1/', { displayName, displayNameCode });
+          if (data.ErrorCode !== 1) { showStatus('Error: ' + (data.Message || 'API error'), 'error', false); return; }
+          results = data.Response || [];
+        } else {
+          // No code — prefix search across all pages (up to 3) to find matching names
+          const prefix = raw;
+          let page = 0;
+          while (page < 3) {
+            const data = await apiPost(`/User/Search/GlobalName/${page}/`, { displayNamePrefix: prefix });
+            if (data.ErrorCode !== 1) break;
+            const users = data.Response?.searchResults || [];
+            // Each user may have multiple destinyMemberships — flatten into result-list entries
+            for (const u of users) {
+              for (const m of (u.destinyMemberships || [])) {
+                results.push({
+                  ...m,
+                  bungieGlobalDisplayName:     u.bungieGlobalDisplayName,
+                  bungieGlobalDisplayNameCode: u.bungieGlobalDisplayNameCode,
+                });
+              }
+            }
+            // Stop early if there are fewer than 25 results (last page)
+            if (users.length < 25) break;
+            page++;
+          }
+        }
+
+        if (!results.length) {
+          showStatus('No guardians found. Try including the #code for an exact match.', 'error', false);
+          return;
+        }
+
         hideStatus();
         results.length === 1 ? loadProfile(results[0]) : renderResultsList(results);
       } catch (e) {
-        showStatus('Request failed. Check your API key and network.', 'error', false);
+        showStatus('Request failed. Check your connection.', 'error', false);
       }
     }
 

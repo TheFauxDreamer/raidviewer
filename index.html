@@ -1291,16 +1291,19 @@
         state.rawActivities = all;
         state.rawNameCache = { ...nameCache };
 
-        // Determine first clears: walk chronologically, mark first completed run per referenceId
+        // Determine first clears: walk chronologically, mark first completed run per activity name.
+        // We use the resolved name rather than directorActivityHash because Bungie sometimes
+        // creates new activity definitions for the same raid (e.g. after patches), resulting
+        // in different hashes that resolve to the same name.
         const firstClearInstances = new Set();
         const seenCleared = new Set();
 
         all.forEach(act => {
-          const hash = act.activityDetails.directorActivityHash;
+          const name = nameCache[act.activityDetails.referenceId] || ('hash:' + act.activityDetails.directorActivityHash);
           const completed = (act.values?.completed?.basic?.value ?? 0) === 1;
-          if (completed && !seenCleared.has(hash)) {
+          if (completed && !seenCleared.has(name)) {
             firstClearInstances.add(act.activityDetails.instanceId);
-            seenCleared.add(hash);
+            seenCleared.add(name);
           }
         });
 

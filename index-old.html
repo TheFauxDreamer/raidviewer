@@ -267,6 +267,14 @@
       color: var(--ghost);
     }
 
+    .result-platforms {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
     .result-code {
       color: var(--muted);
       font-family: 'Share Tech Mono', monospace;
@@ -280,6 +288,40 @@
       color: var(--muted);
       border: 1px solid var(--border);
       padding: 2px 8px;
+      flex-shrink: 0;
+    }
+
+    .result-emblem {
+      width: 44px;
+      height: 44px;
+      flex-shrink: 0;
+      background: var(--border);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .result-emblem img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .result-emblem img.loaded {
+      opacity: 1;
+    }
+
+    .result-emblem-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: var(--muted);
+      opacity: 0.4;
     }
 
     #profile-section {
@@ -891,11 +933,11 @@
 <div class="search-section">
       <label class="search-label">Search Guardian</label>
       <div class="search-row">
-        <input type="text" id="searchInput" placeholder="BungieName#1234"
+        <input type="text" id="searchInput" placeholder="BungieName or BungieName#1234"
           onkeydown="if(event.key==='Enter') search()" />
         <button id="searchBtn" onclick="search()">Search</button>
       </div>
-      <div class="search-hint">Enter the guardian's Bungie name with their numeric code</div>
+      <div class="search-hint">Search by name alone or include #code to find an exact match</div>
     </div>
 
     <div class="status-bar" id="statusBar">
@@ -1011,42 +1053,117 @@
       const raw = document.getElementById('searchInput').value.trim();
       if (!raw) return;
 
-      let displayName = raw, displayNameCode = 0;
-      const hi = raw.lastIndexOf('#');
-      if (hi > 0) { displayName = raw.slice(0, hi); displayNameCode = parseInt(raw.slice(hi + 1)) || 0; }
-
       document.getElementById('resultsList').style.display = 'none';
       document.getElementById('profile-section').style.display = 'none';
       showStatus('Searching for guardian...', 'info', true);
 
+      const hi = raw.lastIndexOf('#');
+      const hasCode = hi > 0 && /^\d{1,4}$/.test(raw.slice(hi + 1).trim());
+
       try {
-        const data = await apiPost('/Destiny2/SearchDestinyPlayerByBungieName/-1/', { displayName, displayNameCode });
-        if (data.ErrorCode !== 1) { showStatus('Error: ' + (data.Message || 'API error'), 'error', false); return; }
-        const results = data.Response || [];
-        if (!results.length) { showStatus('No guardians found. Check the name and code.', 'error', false); return; }
+        // results: array of objects with { membershipId, membershipType,
+        //   bungieGlobalDisplayName, bungieGlobalDisplayNameCode, allMemberships? }
+        let results = [];
+
+        if (hasCode) {
+          // Exact match — one entry per platform the player is on
+          const displayName = raw.slice(0, hi);
+          const displayNameCode = parseInt(raw.slice(hi + 1)) || 0;
+          const data = await apiPost('/Destiny2/SearchDestinyPlayerByBungieName/-1/', { displayName, displayNameCode });
+          if (data.ErrorCode !== 1) { showStatus('Error: ' + (data.Message || 'API error'), 'error', false); return; }
+          results = data.Response || [];
+        } else {
+          // Prefix search — one entry per unique Bungie user
+          let page = 0;
+          while (page < 3) {
+            const data = await apiPost(`/User/Search/GlobalName/${page}/`, { displayNamePrefix: raw });
+            if (data.ErrorCode !== 1) break;
+            const users = data.Response?.searchResults || [];
+            for (const u of users) {
+              const memberships = u.destinyMemberships || [];
+              if (!memberships.length) continue;
+              // Prefer the cross-save override membership, else the first one
+              const primary = memberships.find(m => m.membershipType === m.crossSaveOverride)
+                           || memberships[0];
+              results.push({
+                ...primary,
+                bungieGlobalDisplayName:     u.bungieGlobalDisplayName,
+                bungieGlobalDisplayNameCode: u.bungieGlobalDisplayNameCode,
+                allMemberships:              memberships,
+              });
+            }
+            if (users.length < 25) break;
+            page++;
+          }
+        }
+
+        if (!results.length) {
+          showStatus('No guardians found. Try including the #code for an exact match.', 'error', false);
+          return;
+        }
+
         hideStatus();
-        results.length === 1 ? loadProfile(results[0]) : renderResultsList(results);
+        // Always show the list so the user can confirm or pick the right account
+        renderResultsList(results);
       } catch (e) {
-        showStatus('Request failed. Check your API key and network.', 'error', false);
+        showStatus('Request failed. Check your connection.', 'error', false);
       }
     }
 
     function renderResultsList(results) {
       const list = document.getElementById('resultsList');
       list.innerHTML = '';
+
       results.forEach(r => {
         const item = document.createElement('div');
         item.className = 'result-item';
+        const code = r.bungieGlobalDisplayNameCode != null
+          ? '#' + String(r.bungieGlobalDisplayNameCode).padStart(4, '0')
+          : '';
+        const emblemId = `emblem-${r.membershipType}-${r.membershipId}`;
+
+        // Show all platforms this user plays on (cross-save aware)
+        const platforms = (r.allMemberships || [r])
+          .map(m => PLATFORM_NAMES[m.membershipType] || ('Platform ' + m.membershipType))
+          .filter((v, i, a) => a.indexOf(v) === i) // dedupe
+          .join(' · ');
+
         item.innerHTML = `
-      <div>
-        <div class="result-name">${r.bungieGlobalDisplayName}<span class="result-code">#${String(r.bungieGlobalDisplayNameCode).padStart(4, '0')}</span></div>
-      </div>
-      <div class="result-platform">${PLATFORM_NAMES[r.membershipType] || 'Platform ' + r.membershipType}</div>
-    `;
+          <div class="result-emblem" id="${emblemId}">
+            <div class="result-emblem-placeholder">◈</div>
+            <img alt="emblem" />
+          </div>
+          <div style="flex:1; min-width:0; padding: 0 12px;">
+            <div class="result-name">${r.bungieGlobalDisplayName || r.displayName}<span class="result-code">${code}</span></div>
+            <div class="result-platforms">${platforms}</div>
+          </div>
+        `;
         item.onclick = () => { list.style.display = 'none'; loadProfile(r); };
         list.appendChild(item);
       });
+
       list.style.display = 'block';
+
+      // Fetch emblems in parallel — update each card as they resolve
+      results.forEach(r => {
+        const emblemId = `emblem-${r.membershipType}-${r.membershipId}`;
+        apiFetch(`/Destiny2/${r.membershipType}/Profile/${r.membershipId}/?components=200`)
+          .then(data => {
+            if (data.ErrorCode !== 1) return;
+            const chars = Object.values(data.Response?.characters?.data || {});
+            if (!chars.length) return;
+            // Most recently played character
+            chars.sort((a, b) => new Date(b.dateLastPlayed) - new Date(a.dateLastPlayed));
+            const emblemPath = chars[0].emblemPath;
+            if (!emblemPath) return;
+            const el = document.getElementById(emblemId);
+            if (!el) return;
+            const img = el.querySelector('img');
+            img.onload = () => img.classList.add('loaded');
+            img.src = 'https://www.bungie.net' + emblemPath;
+          })
+          .catch(() => {}); // silently skip if emblem fetch fails
+      });
     }
 
     // ── Profile ─────────────────────────────────────────────────────────────────
@@ -1142,6 +1259,7 @@
         }));
       }
     }
+
 
     async function loadAllHistory() {
       document.getElementById('activityList').innerHTML =
@@ -1252,7 +1370,6 @@
         return;
       }
 
-      // Sort: guardian first, then by score desc
       const sorted = [...entries].sort((a, b) => {
         const aIsMe = a.player?.destinyUserInfo?.membershipId === state.membershipId;
         const bIsMe = b.player?.destinyUserInfo?.membershipId === state.membershipId;
@@ -1261,42 +1378,33 @@
         return (b.score?.basic?.value || 0) - (a.score?.basic?.value || 0);
       });
 
-      panel.innerHTML = `
-        <div class="fireteam-label">Fireteam · ${entries.length} guardian${entries.length !== 1 ? 's' : ''}</div>
-        <div class="fireteam-grid">
-          ${sorted.map(e => {
-            const info    = e.player?.destinyUserInfo || {};
-            const vals    = e.values || {};
-            const isMe    = info.membershipId === state.membershipId;
-            const name    = (info.bungieGlobalDisplayName || info.displayName || 'Unknown') +
-                            (info.bungieGlobalDisplayNameCode ? '#' + String(info.bungieGlobalDisplayNameCode).padStart(4,'0') : '');
-            const kills   = Math.round(vals.kills?.basic?.value || 0);
-            const deaths  = Math.round(vals.deaths?.basic?.value || 0);
-            const assists = Math.round(vals.assists?.basic?.value || 0);
-            const kd      = deaths > 0 ? (kills / deaths).toFixed(2) : kills > 0 ? '∞' : '—';
-            const done    = (vals.completed?.basic?.value ?? 0) === 1;
-            return \`
-              <div class="fireteam-member\${isMe ? ' is-guardian' : ''}">
-                <div class="member-name">\${name}\${isMe ? ' ◀' : ''}</div>
-                <div class="member-stat">
-                  <div class="member-stat-val">\${kills}</div>
-                  <div class="member-stat-lbl">Kills</div>
-                </div>
-                <div class="member-stat">
-                  <div class="member-stat-val">\${deaths}</div>
-                  <div class="member-stat-lbl">Deaths</div>
-                </div>
-                <div class="member-stat">
-                  <div class="member-stat-val">\${kd}</div>
-                  <div class="member-stat-lbl">K/D</div>
-                </div>
-                <div class="member-completed \${done ? 'ok' : 'dnf'}">\${done ? 'Cleared' : 'DNF'}</div>
-              </div>\`;
-          }).join('')}
-        </div>`;
+      const rows = sorted.map(function(e) {
+        const info   = e.player && e.player.destinyUserInfo ? e.player.destinyUserInfo : {};
+        const vals   = e.values || {};
+        const isMe   = info.membershipId === state.membershipId;
+        const name   = (info.bungieGlobalDisplayName || info.displayName || 'Unknown') +
+                       (info.bungieGlobalDisplayNameCode
+                         ? '#' + String(info.bungieGlobalDisplayNameCode).padStart(4, '0')
+                         : '');
+        const kills  = Math.round((vals.kills  && vals.kills.basic  && vals.kills.basic.value)  || 0);
+        const deaths = Math.round((vals.deaths && vals.deaths.basic && vals.deaths.basic.value) || 0);
+        const kd     = deaths > 0 ? (kills / deaths).toFixed(2) : kills > 0 ? '\u221e' : '\u2014';
+        const done   = ((vals.completed && vals.completed.basic && vals.completed.basic.value) || 0) === 1;
+        return '<div class="fireteam-member' + (isMe ? ' is-guardian' : '') + '">' +
+               '<div class="member-name">' + name + (isMe ? ' \u25c4' : '') + '</div>' +
+               '<div class="member-stat"><div class="member-stat-val">' + kills + '</div><div class="member-stat-lbl">Kills</div></div>' +
+               '<div class="member-stat"><div class="member-stat-val">' + deaths + '</div><div class="member-stat-lbl">Deaths</div></div>' +
+               '<div class="member-stat"><div class="member-stat-val">' + kd + '</div><div class="member-stat-lbl">K/D</div></div>' +
+               '<div class="member-completed ' + (done ? 'ok' : 'dnf') + '">' + (done ? 'Cleared' : 'DNF') + '</div>' +
+               '</div>';
+      });
+
+      panel.innerHTML =
+        '<div class="fireteam-label">Fireteam \u00b7 ' + entries.length + ' guardian' + (entries.length !== 1 ? 's' : '') + '</div>' +
+        '<div class="fireteam-grid">' + rows.join('') + '</div>';
     }
 
-    // ── Download ─────────────────────────────────────────────────────────────────
+        // ── Download ─────────────────────────────────────────────────────────────────
 
     function downloadData() {
       if (!state.rawActivities) return;
@@ -1355,10 +1463,10 @@
       // Apply solo filter
       const filtered = hideSolo
         ? activities.filter(act => {
-            const cached = fireteamCache[act.activityDetails.instanceId];
-            // If not yet fetched we don't know — include it (conservative)
-            if (!cached) return true;
-            return cached.length > 1;
+            const playerCount = act.values && act.values.playerCount
+              ? act.values.playerCount.basic.value
+              : 1;
+            return playerCount >= 2;
           })
         : activities;
 

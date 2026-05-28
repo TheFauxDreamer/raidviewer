@@ -280,6 +280,40 @@
       color: var(--muted);
       border: 1px solid var(--border);
       padding: 2px 8px;
+      flex-shrink: 0;
+    }
+
+    .result-emblem {
+      width: 44px;
+      height: 44px;
+      flex-shrink: 0;
+      background: var(--border);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .result-emblem img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .result-emblem img.loaded {
+      opacity: 1;
+    }
+
+    .result-emblem-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: var(--muted);
+      opacity: 0.4;
     }
 
     #profile-section {
@@ -1067,19 +1101,50 @@
     function renderResultsList(results) {
       const list = document.getElementById('resultsList');
       list.innerHTML = '';
+
       results.forEach(r => {
         const item = document.createElement('div');
         item.className = 'result-item';
+        const code = r.bungieGlobalDisplayNameCode != null
+          ? '#' + String(r.bungieGlobalDisplayNameCode).padStart(4, '0')
+          : '';
+        const emblemId = `emblem-${r.membershipType}-${r.membershipId}`;
         item.innerHTML = `
-      <div>
-        <div class="result-name">${r.bungieGlobalDisplayName}<span class="result-code">#${String(r.bungieGlobalDisplayNameCode).padStart(4, '0')}</span></div>
-      </div>
-      <div class="result-platform">${PLATFORM_NAMES[r.membershipType] || 'Platform ' + r.membershipType}</div>
-    `;
+          <div class="result-emblem" id="${emblemId}">
+            <div class="result-emblem-placeholder">◈</div>
+            <img alt="emblem" />
+          </div>
+          <div style="flex:1; min-width:0; padding: 0 12px;">
+            <div class="result-name">${r.bungieGlobalDisplayName || r.displayName}<span class="result-code">${code}</span></div>
+          </div>
+          <div class="result-platform">${PLATFORM_NAMES[r.membershipType] || 'Platform ' + r.membershipType}</div>
+        `;
         item.onclick = () => { list.style.display = 'none'; loadProfile(r); };
         list.appendChild(item);
       });
+
       list.style.display = 'block';
+
+      // Fetch emblems in parallel — update each card as they resolve
+      results.forEach(r => {
+        const emblemId = `emblem-${r.membershipType}-${r.membershipId}`;
+        apiFetch(`/Destiny2/${r.membershipType}/Profile/${r.membershipId}/?components=200`)
+          .then(data => {
+            if (data.ErrorCode !== 1) return;
+            const chars = Object.values(data.Response?.characters?.data || {});
+            if (!chars.length) return;
+            // Most recently played character
+            chars.sort((a, b) => new Date(b.dateLastPlayed) - new Date(a.dateLastPlayed));
+            const emblemPath = chars[0].emblemPath;
+            if (!emblemPath) return;
+            const el = document.getElementById(emblemId);
+            if (!el) return;
+            const img = el.querySelector('img');
+            img.onload = () => img.classList.add('loaded');
+            img.src = 'https://www.bungie.net' + emblemPath;
+          })
+          .catch(() => {}); // silently skip if emblem fetch fails
+      });
     }
 
     // ── Profile ─────────────────────────────────────────────────────────────────

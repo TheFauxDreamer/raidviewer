@@ -993,6 +993,12 @@
           </div>
           Hide solo runs
         </label>
+        <label class="filter-toggle" onclick="toggleFailedFilter()">
+          <div class="toggle-track" id="failedToggleTrack">
+            <div class="toggle-thumb"></div>
+          </div>
+          Hide failed runs
+        </label>
         <button id="downloadBtn" class="secondary" onclick="downloadData()" style="margin-left:auto;">⬇ Download Raw Data</button>
       </div>
 
@@ -1320,18 +1326,18 @@
     // ── Solo filter ──────────────────────────────────────────────────────────────
 
     let hideSolo = false;
+    let hideFailed = false;
 
     function toggleSoloFilter() {
       hideSolo = !hideSolo;
-      const track = document.getElementById('soloToggleTrack');
-      track.classList.toggle('on', hideSolo);
-      if (state.renderedActivities) {
-        renderActivities(
-          state.renderedActivities,
-          state.renderedFirstClears,
-          state.renderedRaidIds
-        );
-      }
+      document.getElementById('soloToggleTrack').classList.toggle('on', hideSolo);
+      if (state.renderedActivities) renderActivities(state.renderedActivities, state.renderedFirstClears, state.renderedRaidIds);
+    }
+
+    function toggleFailedFilter() {
+      hideFailed = !hideFailed;
+      document.getElementById('failedToggleTrack').classList.toggle('on', hideFailed);
+      if (state.renderedActivities) renderActivities(state.renderedActivities, state.renderedFirstClears, state.renderedRaidIds);
     }
 
     // ── Fireteam expand ───────────────────────────────────────────────────────────
@@ -1464,15 +1470,19 @@
       state.renderedRaidIds     = raidInstanceIds;
 
       // Apply solo filter
-      const filtered = hideSolo
-        ? activities.filter(act => {
-            const playerCount = act.values && act.values.playerCount
-              ? act.values.playerCount.basic.value
-              : 1;
-            // This value changes the fireteam minimum size to be excluded in "solo" toggle.
-            return playerCount >= 1;
-          })
-        : activities;
+      let filtered = activities;
+      if (hideSolo) {
+        filtered = filtered.filter(act => {
+          const playerCount = act.values && act.values.playerCount
+            ? act.values.playerCount.basic.value : 1;
+          return playerCount >= 2;
+        });
+      }
+      if (hideFailed) {
+        filtered = filtered.filter(act =>
+          (act.values?.completed?.basic?.value ?? 0) === 1
+        );
+      }
 
       const list = document.getElementById('activityList');
       list.innerHTML = '';

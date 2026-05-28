@@ -111,40 +111,6 @@
       margin-top: 4px;
     }
 
-    .api-section {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 20px 24px;
-      margin-bottom: 28px;
-      clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 0 100%);
-      position: relative;
-    }
-
-    .api-section::before {
-      content: 'API KEY';
-      position: absolute;
-      top: 8px;
-      right: 28px;
-      font-size: 10px;
-      letter-spacing: 0.2em;
-      color: var(--muted);
-      font-family: 'Share Tech Mono', monospace;
-    }
-
-    .api-section label {
-      display: block;
-      font-size: 11px;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 8px;
-    }
-
-    .api-input-row {
-      display: flex;
-      gap: 10px;
-    }
-
     input[type="text"],
     input[type="password"] {
       background: var(--bg);
@@ -730,15 +696,8 @@
       </div>
     </header>
 
-    <div class="api-section">
-      <label>Bungie API Key</label>
-      <div class="api-input-row">
-        <input type="password" id="apiKey" placeholder="Paste your API key from bungie.net/en/Application" />
-        <button onclick="saveKey()">Set Key</button>
-      </div>
-    </div>
 
-    <div class="search-section">
+<div class="search-section">
       <label class="search-label">Search Guardian</label>
       <div class="search-row">
         <input type="text" id="searchInput" placeholder="BungieName#1234"
@@ -805,35 +764,34 @@
   </div>
 
   <script>
-    const API_ROOT = 'https://www.bungie.net/Platform';
-
     const CLASS_NAMES = { 0: 'Titan', 1: 'Hunter', 2: 'Warlock', 3: 'Unknown' };
     const RACE_NAMES = { 0: 'Human', 1: 'Awoken', 2: 'Exo', 3: 'Unknown' };
     const PLATFORM_NAMES = { 1: 'Xbox', 2: 'PSN', 3: 'Steam', 4: 'Blizzard', 5: 'Stadia', 6: 'Epic', 254: 'BungieNet', 0: 'None' };
 
     let state = {
-      apiKey: '', membershipId: '', membershipType: '',
+      membershipId: '', membershipType: '',
       displayName: '', displayNameCode: '', characters: [], activeCharId: ''
     };
 
     // Name cache: hash → string
     const nameCache = {};
 
-    window.onload = () => {
-      const saved = localStorage.getItem('bungie_api_key');
-      if (saved) {
-        document.getElementById('apiKey').value = saved;
-        state.apiKey = saved;
-        showStatus('API key loaded. Enter a guardian name to search.', 'info', false);
-      }
-    };
+    // ── API proxy helpers ──────────────────────────────────────────────────────
+    // All requests go through the Netlify Function, which injects the API key
+    // server-side from the BUNGIE_API_KEY environment variable.
 
-    function saveKey() {
-      const key = document.getElementById('apiKey').value.trim();
-      if (!key) return showStatus('Please enter an API key.', 'error', false);
-      state.apiKey = key;
-      localStorage.setItem('bungie_api_key', key);
-      showStatus('API key saved.', 'info', false);
+    const PROXY = '/.netlify/functions/bungie-proxy';
+
+    function apiFetch(path) {
+      return fetch(`${PROXY}?path=${encodeURIComponent(path)}`).then(r => r.json());
+    }
+
+    function apiPost(path, body) {
+      return fetch(`${PROXY}?path=${encodeURIComponent(path)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }).then(r => r.json());
     }
 
     function showStatus(msg, type = 'info', loading = false) {
@@ -846,26 +804,11 @@
 
     function hideStatus() { document.getElementById('statusBar').style.display = 'none'; }
 
-    function apiFetch(path) {
-      if (!state.apiKey) { showStatus('Set your API key first.', 'error', false); throw new Error('No key'); }
-      return fetch(API_ROOT + path, { headers: { 'X-API-Key': state.apiKey } }).then(r => r.json());
-    }
-
-    function apiPost(path, body) {
-      if (!state.apiKey) { showStatus('Set your API key first.', 'error', false); throw new Error('No key'); }
-      return fetch(API_ROOT + path, {
-        method: 'POST',
-        headers: { 'X-API-Key': state.apiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      }).then(r => r.json());
-    }
-
     // ── Search ──────────────────────────────────────────────────────────────────
 
     async function search() {
       const raw = document.getElementById('searchInput').value.trim();
       if (!raw) return;
-      if (!state.apiKey) { showStatus('Set your API key first.', 'error', false); return; }
 
       let displayName = raw, displayNameCode = 0;
       const hi = raw.lastIndexOf('#');
@@ -1029,7 +972,7 @@
         const seenCleared = new Set();
 
         all.forEach(act => {
-          const hash = act.activityDetails.referenceId;
+          const hash = act.activityDetails.directorActivityHash;
           const completed = (act.values?.completed?.basic?.value ?? 0) === 1;
           if (completed && !seenCleared.has(hash)) {
             firstClearInstances.add(act.activityDetails.instanceId);

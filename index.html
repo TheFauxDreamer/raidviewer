@@ -1369,7 +1369,6 @@
         return;
       }
 
-      // Sort: guardian first, then by score desc
       const sorted = [...entries].sort((a, b) => {
         const aIsMe = a.player?.destinyUserInfo?.membershipId === state.membershipId;
         const bIsMe = b.player?.destinyUserInfo?.membershipId === state.membershipId;
@@ -1378,42 +1377,33 @@
         return (b.score?.basic?.value || 0) - (a.score?.basic?.value || 0);
       });
 
-      panel.innerHTML = `
-        <div class="fireteam-label">Fireteam · ${entries.length} guardian${entries.length !== 1 ? 's' : ''}</div>
-        <div class="fireteam-grid">
-          ${sorted.map(e => {
-            const info    = e.player?.destinyUserInfo || {};
-            const vals    = e.values || {};
-            const isMe    = info.membershipId === state.membershipId;
-            const name    = (info.bungieGlobalDisplayName || info.displayName || 'Unknown') +
-                            (info.bungieGlobalDisplayNameCode ? '#' + String(info.bungieGlobalDisplayNameCode).padStart(4,'0') : '');
-            const kills   = Math.round(vals.kills?.basic?.value || 0);
-            const deaths  = Math.round(vals.deaths?.basic?.value || 0);
-            const assists = Math.round(vals.assists?.basic?.value || 0);
-            const kd      = deaths > 0 ? (kills / deaths).toFixed(2) : kills > 0 ? '∞' : '—';
-            const done    = (vals.completed?.basic?.value ?? 0) === 1;
-            return \`
-              <div class="fireteam-member\${isMe ? ' is-guardian' : ''}">
-                <div class="member-name">\${name}\${isMe ? ' ◀' : ''}</div>
-                <div class="member-stat">
-                  <div class="member-stat-val">\${kills}</div>
-                  <div class="member-stat-lbl">Kills</div>
-                </div>
-                <div class="member-stat">
-                  <div class="member-stat-val">\${deaths}</div>
-                  <div class="member-stat-lbl">Deaths</div>
-                </div>
-                <div class="member-stat">
-                  <div class="member-stat-val">\${kd}</div>
-                  <div class="member-stat-lbl">K/D</div>
-                </div>
-                <div class="member-completed \${done ? 'ok' : 'dnf'}">\${done ? 'Cleared' : 'DNF'}</div>
-              </div>\`;
-          }).join('')}
-        </div>`;
+      const rows = sorted.map(function(e) {
+        const info   = e.player && e.player.destinyUserInfo ? e.player.destinyUserInfo : {};
+        const vals   = e.values || {};
+        const isMe   = info.membershipId === state.membershipId;
+        const name   = (info.bungieGlobalDisplayName || info.displayName || 'Unknown') +
+                       (info.bungieGlobalDisplayNameCode
+                         ? '#' + String(info.bungieGlobalDisplayNameCode).padStart(4, '0')
+                         : '');
+        const kills  = Math.round((vals.kills  && vals.kills.basic  && vals.kills.basic.value)  || 0);
+        const deaths = Math.round((vals.deaths && vals.deaths.basic && vals.deaths.basic.value) || 0);
+        const kd     = deaths > 0 ? (kills / deaths).toFixed(2) : kills > 0 ? '\u221e' : '\u2014';
+        const done   = ((vals.completed && vals.completed.basic && vals.completed.basic.value) || 0) === 1;
+        return '<div class="fireteam-member' + (isMe ? ' is-guardian' : '') + '">' +
+               '<div class="member-name">' + name + (isMe ? ' \u25c4' : '') + '</div>' +
+               '<div class="member-stat"><div class="member-stat-val">' + kills + '</div><div class="member-stat-lbl">Kills</div></div>' +
+               '<div class="member-stat"><div class="member-stat-val">' + deaths + '</div><div class="member-stat-lbl">Deaths</div></div>' +
+               '<div class="member-stat"><div class="member-stat-val">' + kd + '</div><div class="member-stat-lbl">K/D</div></div>' +
+               '<div class="member-completed ' + (done ? 'ok' : 'dnf') + '">' + (done ? 'Cleared' : 'DNF') + '</div>' +
+               '</div>';
+      });
+
+      panel.innerHTML =
+        '<div class="fireteam-label">Fireteam \u00b7 ' + entries.length + ' guardian' + (entries.length !== 1 ? 's' : '') + '</div>' +
+        '<div class="fireteam-grid">' + rows.join('') + '</div>';
     }
 
-    // ── Download ─────────────────────────────────────────────────────────────────
+        // ── Download ─────────────────────────────────────────────────────────────────
 
     function downloadData() {
       if (!state.rawActivities) return;

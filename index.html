@@ -753,6 +753,8 @@
         </div>
       </div>
 
+      <button id="downloadBtn" class="secondary" onclick="downloadData()" style="display:none; margin-bottom:12px;">⬇ Download Raw Data</button>
+
       <div class="activity-list" id="activityList">
         <div class="empty-state">
           <div class="icon">◈</div>
@@ -946,6 +948,7 @@
       document.getElementById('activityList').innerHTML =
         '<div class="empty-state"><div class="spinner" style="margin:0 auto 16px;width:24px;height:24px;border-width:2px"></div><p>Scanning history...</p></div>';
       document.getElementById('summaryBar').style.display = 'none';
+      document.getElementById('downloadBtn').style.display = 'none';
       document.getElementById('activityCount').textContent = '';
 
       try {
@@ -966,6 +969,10 @@
         // Resolve unique activity names
         const uniqueHashes = [...new Set(all.map(a => a.activityDetails.referenceId))];
         await resolveNames(uniqueHashes);
+
+        // Store raw data for download / debugging
+        state.rawActivities = all;
+        state.rawNameCache = { ...nameCache };
 
         // Determine first clears: walk chronologically, mark first completed run per referenceId
         const firstClearInstances = new Set();
@@ -988,6 +995,54 @@
       } catch (e) {
         showStatus('Failed to load history. Check your API key.', 'error', false);
       }
+    }
+
+    // ── Download ─────────────────────────────────────────────────────────────────
+
+    function downloadData() {
+      if (!state.rawActivities) return;
+
+      const firstClearInstances = new Set();
+      const seenCleared = new Set();
+      [...state.rawActivities].forEach(act => {
+        const hash = act.activityDetails.directorActivityHash;
+        const completed = (act.values?.completed?.basic?.value ?? 0) === 1;
+        if (completed && !seenCleared.has(hash)) {
+          firstClearInstances.add(act.activityDetails.instanceId);
+          seenCleared.add(hash);
+        }
+      });
+
+      const annotated = state.rawActivities.map(act => ({
+        instanceId:            act.activityDetails.instanceId,
+        referenceId:           act.activityDetails.referenceId,
+        directorActivityHash:  act.activityDetails.directorActivityHash,
+        activityName:          state.rawNameCache[act.activityDetails.referenceId] || 'Unknown',
+        period:                act.period,
+        completed:             (act.values?.completed?.basic?.value ?? 0) === 1,
+        markedAsFirstClear:    firstClearInstances.has(act.activityDetails.instanceId),
+        durationSeconds:       act.values?.activityDurationSeconds?.basic?.value || 0,
+        kills:                 act.values?.kills?.basic?.value || 0,
+        deaths:                act.values?.deaths?.basic?.value || 0,
+        raw:                   act,
+      }));
+
+      const payload = {
+        exportedAt:   new Date().toISOString(),
+        guardian:     state.displayName + '#' + String(state.displayNameCode).padStart(4, '0'),
+        membershipId: state.membershipId,
+        characterId:  state.activeCharId,
+        totalRuns:    annotated.length,
+        activities:   annotated,
+      };
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `ghost-${state.displayName}-${state.activeCharId}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
     }
 
     // ── Render ───────────────────────────────────────────────────────────────────
@@ -1080,6 +1135,7 @@
       document.getElementById('sumRaids').textContent = raidClears;
       document.getElementById('sumDungeons').textContent = dungeonClears;
       document.getElementById('summaryBar').style.display = 'flex';
+      document.getElementById('downloadBtn').style.display = 'inline-block';
     }
 
     function formatDuration(seconds) {

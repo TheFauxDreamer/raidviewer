@@ -1260,6 +1260,7 @@
       }
     }
 
+
     async function loadAllHistory() {
       document.getElementById('activityList').innerHTML =
         '<div class="empty-state"><div class="spinner" style="margin:0 auto 16px;width:24px;height:24px;border-width:2px"></div><p>Scanning history...</p></div>';
@@ -1462,10 +1463,10 @@
       // Apply solo filter
       const filtered = hideSolo
         ? activities.filter(act => {
-            const cached = fireteamCache[act.activityDetails.instanceId];
-            // If not yet fetched we don't know — include it (conservative)
-            if (!cached) return true;
-            return cached.length > 1;
+            const playerCount = act.values && act.values.playerCount
+              ? act.values.playerCount.basic.value
+              : 1;
+            return playerCount >= 2;
           })
         : activities;
 

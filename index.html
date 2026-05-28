@@ -1469,7 +1469,8 @@
             const playerCount = act.values && act.values.playerCount
               ? act.values.playerCount.basic.value
               : 1;
-            return playerCount >= 2;
+            // This value changes the fireteam minimum size to be excluded in "solo" toggle.
+            return playerCount >= 4;
           })
         : activities;
 

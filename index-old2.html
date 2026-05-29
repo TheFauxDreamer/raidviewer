@@ -571,6 +571,26 @@
       font-size: 7px;
     }
 
+    .solo-badge {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #7ecfb3;
+      border: 1px solid rgba(126, 207, 179, 0.5);
+      background: rgba(126, 207, 179, 0.08);
+      padding: 2px 7px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .solo-badge::before {
+      content: '◆';
+      font-size: 7px;
+    }
+
     .act-type-badge {
       font-size: 9px;
       letter-spacing: 0.15em;
@@ -993,7 +1013,20 @@
           </div>
           Hide solo runs
         </label>
-        <button id="downloadBtn" class="secondary" onclick="downloadData()" style="margin-left:auto;">⬇ Download Raw Data</button>
+        <label class="filter-toggle" onclick="toggleFailedFilter()">
+          <div class="toggle-track" id="failedToggleTrack">
+            <div class="toggle-thumb"></div>
+          </div>
+          Hide failed runs
+        </label>
+        <div style="display:flex; align-items:center; gap:8px; margin-left:auto;">
+          <select id="activityTypeSelect" onchange="setActivityTypeFilter(this.value)" style="background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;padding:4px 8px;cursor:pointer;outline:none;">
+            <option value="both">Both</option>
+            <option value="raids">Raids Only</option>
+            <option value="dungeons">Dungeons Only</option>
+          </select>
+          <button id="downloadBtn" class="secondary" onclick="downloadData()">⬇ Download Raw Data</button>
+        </div>
       </div>
 
       <div class="activity-list" id="activityList">
@@ -1291,16 +1324,19 @@
         state.rawActivities = all;
         state.rawNameCache = { ...nameCache };
 
-        // Determine first clears: walk chronologically, mark first completed run per referenceId
+        // Determine first clears: walk chronologically, mark first completed run per activity name.
+        // We use the resolved name rather than directorActivityHash because Bungie sometimes
+        // creates new activity definitions for the same raid (e.g. after patches), resulting
+        // in different hashes that resolve to the same name.
         const firstClearInstances = new Set();
         const seenCleared = new Set();
 
         all.forEach(act => {
-          const hash = act.activityDetails.directorActivityHash;
+          const name = nameCache[act.activityDetails.referenceId] || ('hash:' + act.activityDetails.directorActivityHash);
           const completed = (act.values?.completed?.basic?.value ?? 0) === 1;
-          if (completed && !seenCleared.has(hash)) {
+          if (completed && !seenCleared.has(name)) {
             firstClearInstances.add(act.activityDetails.instanceId);
-            seenCleared.add(hash);
+            seenCleared.add(name);
           }
         });
 
@@ -1317,18 +1353,24 @@
     // ── Solo filter ──────────────────────────────────────────────────────────────
 
     let hideSolo = false;
+    let hideFailed = false;
+    let activityTypeFilter = 'both';
 
     function toggleSoloFilter() {
       hideSolo = !hideSolo;
-      const track = document.getElementById('soloToggleTrack');
-      track.classList.toggle('on', hideSolo);
-      if (state.renderedActivities) {
-        renderActivities(
-          state.renderedActivities,
-          state.renderedFirstClears,
-          state.renderedRaidIds
-        );
-      }
+      document.getElementById('soloToggleTrack').classList.toggle('on', hideSolo);
+      if (state.renderedActivities) renderActivities(state.renderedActivities, state.renderedFirstClears, state.renderedRaidIds);
+    }
+
+    function toggleFailedFilter() {
+      hideFailed = !hideFailed;
+      document.getElementById('failedToggleTrack').classList.toggle('on', hideFailed);
+      if (state.renderedActivities) renderActivities(state.renderedActivities, state.renderedFirstClears, state.renderedRaidIds);
+    }
+
+    function setActivityTypeFilter(val) {
+      activityTypeFilter = val;
+      if (state.renderedActivities) renderActivities(state.renderedActivities, state.renderedFirstClears, state.renderedRaidIds);
     }
 
     // ── Fireteam expand ───────────────────────────────────────────────────────────
@@ -1461,14 +1503,27 @@
       state.renderedRaidIds     = raidInstanceIds;
 
       // Apply solo filter
-      const filtered = hideSolo
-        ? activities.filter(act => {
-            const playerCount = act.values && act.values.playerCount
-              ? act.values.playerCount.basic.value
-              : 1;
-            return playerCount >= 2;
-          })
-        : activities;
+      let filtered = activities;
+      if (hideSolo) {
+        filtered = filtered.filter(act => {
+          // Only filter solo on raids — dungeons are designed to be completed solo
+          const isRaid = raidInstanceIds.has(act.activityDetails.instanceId);
+          if (!isRaid) return true;
+          const playerCount = act.values && act.values.playerCount
+            ? act.values.playerCount.basic.value : 1;
+          return playerCount >= 2;
+        });
+      }
+      if (hideFailed) {
+        filtered = filtered.filter(act =>
+          (act.values?.completed?.basic?.value ?? 0) === 1
+        );
+      }
+      if (activityTypeFilter === 'raids') {
+        filtered = filtered.filter(act => raidInstanceIds.has(act.activityDetails.instanceId));
+      } else if (activityTypeFilter === 'dungeons') {
+        filtered = filtered.filter(act => !raidInstanceIds.has(act.activityDetails.instanceId));
+      }
 
       const list = document.getElementById('activityList');
       list.innerHTML = '';
@@ -1485,6 +1540,8 @@
 
         const completed = (v.completed?.basic?.value ?? 0) === 1;
         const isFirstClr = firstClearInstances.has(instId);
+        const playerCount = act.values && act.values.playerCount ? act.values.playerCount.basic.value : 1;
+        const isSoloDungeon = !isRaid && playerCount === 1 && completed;
         const duration = formatDuration(v.activityDurationSeconds?.basic?.value || 0);
 
         const period = new Date(act.period);
@@ -1521,6 +1578,7 @@
           <div class="act-name">${name}</div>
           <div class="act-type-badge ${isRaid ? 'raid' : 'dungeon'}">${isRaid ? 'Raid' : 'Dungeon'}</div>
           ${isFirstClr ? '<div class="first-clear-badge">First Clear</div>' : ''}
+          ${isSoloDungeon ? '<div class="solo-badge">Solo</div>' : ''}
         </div>
         <div class="act-meta">
           <span>${dateStr} · ${timeStr}</span>

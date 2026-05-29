@@ -385,6 +385,35 @@
       border-color: var(--accent2);
     }
 
+    .char-tab-all {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 10px 16px;
+      cursor: pointer;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      transition: all 0.2s;
+      clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+      align-self: stretch;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .char-tab-all:hover { border-color: var(--accent2); color: var(--accent2); }
+    .char-tab-all.active {
+      border-color: var(--accent2);
+      background: rgba(75,143,200,0.1);
+      color: var(--accent2);
+    }
+    .char-tab-all.loading {
+      border-color: var(--accent2);
+      color: var(--accent2);
+      opacity: 0.7;
+      cursor: default;
+    }
     .char-tab.active {
       border-color: var(--accent);
       background: rgba(200, 168, 75, 0.08);
@@ -929,6 +958,50 @@
       .member-stat:nth-child(4) { display: none; }
     }
 
+    /* ── Class badge (Titan / Hunter / Warlock) ── */
+    .class-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 2px 8px 2px 6px;
+      border: 1px solid;
+      white-space: nowrap;
+      clip-path: polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 0 100%);
+    }
+    .class-badge-icon {
+      width: 12px;
+      height: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      /* Icon placeholder — swap src in later */
+    }
+    .class-badge.titan {
+      color: #c5a35c;
+      border-color: rgba(197, 163, 92, 0.45);
+      background: rgba(197, 163, 92, 0.07);
+    }
+    .class-badge.hunter {
+      color: #7aab8a;
+      border-color: rgba(122, 171, 138, 0.45);
+      background: rgba(122, 171, 138, 0.07);
+    }
+    .class-badge.warlock {
+      color: #8a7abf;
+      border-color: rgba(138, 122, 191, 0.45);
+      background: rgba(138, 122, 191, 0.07);
+    }
+    .class-badge.unknown {
+      color: var(--muted);
+      border-color: rgba(255,255,255,0.15);
+      background: transparent;
+    }
+
     /* ── Game badge (D1 / D2) ── */
     .game-badge {
       font-size: 9px;
@@ -1119,6 +1192,11 @@
       <div id="d1CharSelect" style="display:none;">
         <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-top:14px;margin-bottom:8px;">Select Character</div>
         <div class="d1-char-grid" id="d1CharGrid"></div>
+        <div id="d1AllCharWrap" style="display:none;margin-top:8px;">
+          <div class="char-tab-all" id="loadAllD1Btn" onclick="toggleLoadAllD1()" style="display:inline-flex;">
+            <span>⊕</span> Load All D1 Characters
+          </div>
+        </div>
       </div>
       <div class="d1-connected" id="d1Connected" style="display:none;">
         <div class="d1-connected-dot"></div>
@@ -1270,11 +1348,15 @@
     let state = {
       membershipId: '', membershipType: '',
       displayName: '', displayNameCode: '', characters: [], activeCharId: '',
+      loadAllD2: false,   // true = fetch all D2 characters
       // D1 state
       d1MembershipId: '', d1MembershipType: '',
       d1Characters: [], d1ActiveCharId: '', d1CharacterName: '',
       d1Activities: [],
+      loadAllD1: false,   // true = fetch all D1 characters
     };
+    // Map charId -> class name (populated for both D1 and D2)
+    const charClassMap = {};
 
     // Name cache: hash → string
     const nameCache = {};
@@ -1428,6 +1510,9 @@
 
         msgEl.style.display = 'none';
         document.getElementById('d1CharSelect').style.display = 'block';
+        // Show "Load All" option if more than one D1 character
+        document.getElementById('d1AllCharWrap').style.display =
+          chars.length > 1 ? 'block' : 'none';
       } catch (e) {
         msgEl.textContent = 'Failed to load D1 profile.';
         msgEl.style.color = 'var(--danger)';
@@ -1436,10 +1521,18 @@
     }
 
     function selectD1Char(charId, cls, displayName) {
+      state.loadAllD1 = false;
       state.d1ActiveCharId = charId;
+      // Populate charClassMap for all D1 characters
+      state.d1Characters.forEach(c => {
+        const cid = c.characterBase?.characterId;
+        if (cid) charClassMap[cid] = CLASS_NAMES[c.characterBase?.classType] || 'Unknown';
+      });
       document.querySelectorAll('.d1-char-option').forEach(el => {
         el.classList.toggle('active', el.dataset.charid === charId);
       });
+      const allBtn = document.getElementById('loadAllD1Btn');
+      if (allBtn) allBtn.classList.remove('active');
       const platformName = PLATFORM_NAMES[parseInt(state.d1MembershipType)] || 'Unknown';
       document.getElementById('d1ConnectedText').textContent =
         `${displayName || 'D1 Guardian'} · ${cls} · ${platformName}`;
@@ -1459,6 +1552,7 @@
       state.d1Activities = [];
       // Clear cached definitions so they don't bleed into a new D1 account lookup
       Object.keys(d1ActivityDefs).forEach(k => delete d1ActivityDefs[k]);
+      state.loadAllD1 = false;
       document.getElementById('d1Platform').value = '';
       document.getElementById('d1DisplayName').value = '';
       document.getElementById('d1Connected').style.display = 'none';
@@ -1481,6 +1575,7 @@
       document.getElementById('d2Connected').style.display = 'none';
       document.getElementById('d2CharSection').style.display = 'none';
       document.getElementById('charTabs').innerHTML = '';
+      state.loadAllD2 = false;
       // Update header to reflect D1-only state, or hide profile if nothing left
       if (state.d1ActiveCharId) {
         updateProfileHeader();
@@ -1496,24 +1591,28 @@
     // Shape: { [hashString]: { activityName, activityDescription, activityTypeHashName, ... } }
     const d1ActivityDefs = {};
 
-    async function fetchAllD1Pages(mode, label) {
+    async function fetchAllD1Pages(mode, label, charId) {
       const all = [];
       let page = 0;
+      const cls = CLASS_NAMES[
+        state.d1Characters.find(c => c.characterBase?.characterId === charId)?.characterBase?.classType
+      ] || 'character';
       while (true) {
-        showStatus(`Scanning D1 ${label}... (page ${page + 1})`, 'info', true);
+        showStatus(`Scanning D1 ${label} (${cls})... page ${page + 1}`, 'info', true);
         const data = await d1ApiFetch(
-          `/Destiny/Stats/ActivityHistory/${state.d1MembershipType}/${state.d1MembershipId}/${state.d1ActiveCharId}/` +
+          `/Destiny/Stats/ActivityHistory/${state.d1MembershipType}/${state.d1MembershipId}/${charId}/` +
           `?count=250&mode=${mode}&page=${page}&definitions=true`
         );
         if (data.ErrorCode !== 1) break;
         const resp = data.Response?.data || data.Response || {};
         const acts = resp.activities || [];
 
-        // Merge any activity definitions that came back in this page
-        // D1 API returns definitions under Response.definitions.activities (keyed by hash string)
+        // Merge activity definitions
         const defs = data.Response?.definitions?.activities || {};
         Object.assign(d1ActivityDefs, defs);
 
+        // Tag each activity with the character it came from
+        acts.forEach(a => { a._characterId = charId; });
         all.push(...acts);
         if (acts.length < 250) break;
         page++;
@@ -1544,6 +1643,7 @@
       const vals = act.values || {};
       return {
         _isD1: true,
+        _characterId: act._characterId || null,
         period: act.period,
         activityDetails: {
           instanceId: act.activityDetails?.instanceId || act.activityDetails?.referenceId + '_' + act.period,
@@ -1756,6 +1856,12 @@
     function renderCharTabs() {
       const tabs = document.getElementById('charTabs');
       tabs.innerHTML = '';
+
+      // Populate charClassMap for D2 characters
+      state.characters.forEach(c => {
+        charClassMap[c.characterId] = CLASS_NAMES[c.classType] || 'Unknown';
+      });
+
       state.characters.forEach(c => {
         const cls = CLASS_NAMES[c.classType] || 'Unknown';
         const tab = document.createElement('div');
@@ -1769,28 +1875,67 @@
         tab.onclick = () => selectChar(c.characterId);
         tabs.appendChild(tab);
       });
+
+      // "Load All Characters" button (only show if there are multiple characters)
+      if (state.characters.length > 1) {
+        const allBtn = document.createElement('div');
+        allBtn.className = 'char-tab-all' + (state.loadAllD2 ? ' active' : '');
+        allBtn.id = 'loadAllD2Btn';
+        allBtn.innerHTML = `<span>⊕</span> All Characters`;
+        allBtn.onclick = () => toggleLoadAllD2();
+        tabs.appendChild(allBtn);
+      }
     }
 
     function selectChar(charId) {
+      state.loadAllD2 = false;
       state.activeCharId = charId;
       document.querySelectorAll('.char-tab').forEach(t => t.classList.toggle('active', t.dataset.charid === charId));
+      const allBtn = document.getElementById('loadAllD2Btn');
+      if (allBtn) allBtn.classList.remove('active');
       updateProfileHeader();
+      loadAllHistory();
+    }
+
+    function toggleLoadAllD2() {
+      state.loadAllD2 = !state.loadAllD2;
+      if (state.loadAllD2) {
+        // Deselect individual char tabs
+        document.querySelectorAll('.char-tab').forEach(t => t.classList.remove('active'));
+        const allBtn = document.getElementById('loadAllD2Btn');
+        if (allBtn) allBtn.classList.add('active');
+      } else {
+        // Fall back to first character
+        const allBtn = document.getElementById('loadAllD2Btn');
+        if (allBtn) allBtn.classList.remove('active');
+        if (state.characters.length) selectChar(state.characters[0].characterId);
+        return;
+      }
+      loadAllHistory();
+    }
+
+    function toggleLoadAllD1() {
+      state.loadAllD1 = !state.loadAllD1;
+      const btn = document.getElementById('loadAllD1Btn');
+      if (btn) btn.classList.toggle('active', state.loadAllD1);
       loadAllHistory();
     }
 
     // ── Fetch all raids + dungeons ───────────────────────────────────────────────
 
-    async function fetchAllPages(mode, label) {
+    async function fetchAllPages(mode, label, charId) {
       const all = [];
       let page = 0;
       while (true) {
-        showStatus(`Scanning ${label}... (page ${page + 1})`, 'info', true);
+        showStatus(`Scanning ${label} (${charClassMap[charId] || 'character'})... page ${page + 1}`, 'info', true);
         const data = await apiFetch(
-          `/Destiny2/${state.membershipType}/Account/${state.membershipId}/Character/${state.activeCharId}/Stats/Activities/` +
+          `/Destiny2/${state.membershipType}/Account/${state.membershipId}/Character/${charId}/Stats/Activities/` +
           `?count=250&mode=${mode}&page=${page}`
         );
         if (data.ErrorCode !== 1) break;
         const acts = data.Response?.activities || [];
+        // Tag each activity with the character it was fetched for
+        acts.forEach(a => { a._characterId = charId; });
         all.push(...acts);
         if (acts.length < 250) break;
         page++;
@@ -1818,34 +1963,79 @@
 
     async function loadAllHistory() {
       document.getElementById('activityList').innerHTML =
-        '<div class="empty-state"><div class="spinner" style="margin:0 auto 16px;width:24px;height:24px;border-width:2px"></div><p>Scanning history...</p></div>';
+        '<div class="empty-state"><div class="spinner" style="margin:0 auto 16px;width:24px;height:24px;border-width:2px"></div><p id="loadingMsg">Scanning history...</p></div>';
       document.getElementById('summaryBar').style.display = 'none';
       document.getElementById('filterBar').style.display = 'none';
       document.getElementById('activityCount').textContent = '';
 
       try {
-        // ── Fetch D2 raids + dungeons (skip if no D2 character selected) ─────────
+        // ── Determine which D2 characters to fetch ───────────────────────────────
         let d2all = [];
         let d2RaidInstanceIds = new Set();
 
-        if (state.activeCharId) {
-          const raids = await fetchAllPages(4, 'raids');
-          const dungeons = await fetchAllPages(82, 'dungeons');
-          d2all = [...raids, ...dungeons].sort((a, b) => new Date(a.period) - new Date(b.period));
+        const d2CharIds = state.loadAllD2
+          ? state.characters.map(c => c.characterId)
+          : (state.activeCharId ? [state.activeCharId] : []);
+
+        if (d2CharIds.length) {
+          const charCount = d2CharIds.length;
+          const charLabel = charCount > 1 ? `all ${charCount} D2 characters` : (charClassMap[d2CharIds[0]] || 'character');
+          showStatus(`Loading ${charLabel}...`, 'info', true);
+
+          // Fetch all characters, deduplicate by instanceId (shared activities appear on multiple chars)
+          const seen = new Set();
+          const allRaids = [], allDungeons = [];
+          for (const cid of d2CharIds) {
+            const raids    = await fetchAllPages(4,  'raids',    cid);
+            const dungeons = await fetchAllPages(82, 'dungeons', cid);
+            raids.forEach(a => {
+              if (!seen.has(a.activityDetails.instanceId)) {
+                seen.add(a.activityDetails.instanceId);
+                allRaids.push(a);
+              }
+            });
+            dungeons.forEach(a => {
+              if (!seen.has(a.activityDetails.instanceId)) {
+                seen.add(a.activityDetails.instanceId);
+                allDungeons.push(a);
+              }
+            });
+          }
+
+          d2all = [...allRaids, ...allDungeons].sort((a, b) => new Date(a.period) - new Date(b.period));
 
           // Resolve D2 names
           const uniqueHashes = [...new Set(d2all.map(a => a.activityDetails.referenceId))];
           await resolveNames(uniqueHashes);
 
-          d2RaidInstanceIds = new Set(raids.map(r => r.activityDetails.instanceId));
+          d2RaidInstanceIds = new Set(allRaids.map(r => r.activityDetails.instanceId));
           d2all.forEach(act => { act._isD1 = false; });
         }
 
-        // ── Fetch D1 raids (mode 4) if linked ───────────────────────────────────
+        // ── Determine which D1 characters to fetch ───────────────────────────────
         let d1all = [];
-        if (state.d1ActiveCharId) {
-          const d1Raids = await fetchAllD1Pages(4, 'raids');
-          d1all = d1Raids.map(normalizeD1Activity);
+        const d1CharIds = state.loadAllD1
+          ? state.d1Characters.map(c => c.characterBase?.characterId).filter(Boolean)
+          : (state.d1ActiveCharId ? [state.d1ActiveCharId] : []);
+
+        if (d1CharIds.length) {
+          const charCount = d1CharIds.length;
+          const charLabel = charCount > 1 ? `all ${charCount} D1 characters` : (charClassMap[d1CharIds[0]] || 'character');
+          showStatus(`Loading ${charLabel}...`, 'info', true);
+
+          const seenD1 = new Set();
+          const rawD1 = [];
+          for (const cid of d1CharIds) {
+            const raids = await fetchAllD1Pages(4, 'raids', cid);
+            raids.forEach(a => {
+              const iid = a.activityDetails?.instanceId;
+              if (iid && !seenD1.has(iid)) {
+                seenD1.add(iid);
+                rawD1.push(a);
+              }
+            });
+          }
+          d1all = rawD1.map(normalizeD1Activity);
           state.d1Activities = d1all;
         }
 
@@ -1855,7 +2045,7 @@
         if (!all.length) {
           hideStatus();
           document.getElementById('activityList').innerHTML =
-            '<div class="empty-state"><div class="icon">◈</div><p>No raids or dungeons found for this character</p></div>';
+            '<div class="empty-state"><div class="icon">◈</div><p>No raids or dungeons found</p></div>';
           return;
         }
 
@@ -2178,12 +2368,22 @@
         const typeBadgeClass = isRaid ? 'raid' : 'dungeon';
         const typeBadgeLabel = isD1 ? 'D1 Raid' : (isRaid ? 'Raid' : 'Dungeon');
 
+        // Class badge — only shown when multiple characters are loaded
+        const showingMultipleChars = state.loadAllD2 || state.loadAllD1 ||
+          (state.loadAllD2 && state.loadAllD1);
+        const actCharId = act._characterId;
+        const actClass = actCharId ? (charClassMap[actCharId] || 'Unknown') : null;
+        const classBadgeHtml = (showingMultipleChars && actClass)
+          ? `<div class="class-badge ${actClass.toLowerCase()}"><span class="class-badge-icon" data-class="${actClass.toLowerCase()}"></span>${actClass}</div>`
+          : '';
+
         item.innerHTML = `
       <div class="act-main">
         <div class="act-name-row">
           <div class="act-name">${name}</div>
           <div class="act-type-badge ${typeBadgeClass}">${typeBadgeLabel}</div>
           <div class="game-badge ${isD1 ? 'd1' : 'd2'}">${isD1 ? 'D1' : 'D2'}</div>
+          ${classBadgeHtml}
           ${isFirstClr ? '<div class="first-clear-badge">First Clear</div>' : ''}
           ${isSoloDungeon ? '<div class="solo-badge">Solo</div>' : ''}
         </div>
@@ -2220,7 +2420,9 @@
         list.appendChild(item);
       });
 
-      document.getElementById('activityCount').textContent = `${filtered.length} runs`;
+      const multiChar = state.loadAllD2 || state.loadAllD1;
+      const charSuffix = multiChar ? ' across all characters' : '';
+      document.getElementById('activityCount').textContent = `${filtered.length} runs${charSuffix}`;
       document.getElementById('sumTotal').textContent = filtered.length;
       document.getElementById('sumClears').textContent = totalClears;
       document.getElementById('sumFirstClears').textContent = totalFirstClears;

@@ -1361,6 +1361,15 @@
     // Name cache: hash → string
     const nameCache = {};
 
+    // A true raid/dungeon clear requires BOTH completed=1 (character stayed to the end)
+    // AND completionReason=0 (the objective was actually completed, not abandoned/wiped).
+    // completionReason > 0 means the player returned to orbit or the activity ended without success.
+    function isActualClear(values) {
+      const completed       = (values?.completed?.basic?.value ?? 0) === 1;
+      const completionReason = values?.completionReason?.basic?.value ?? 0;
+      return completed && completionReason === 0;
+    }
+
     // ── API proxy helpers ──────────────────────────────────────────────────────
     // All requests go through the Netlify Function, which injects the API key
     // server-side from the BUNGIE_API_KEY environment variable.
@@ -1671,6 +1680,7 @@
         _d1Name: resolveD1Name(act),
         values: {
           completed:               { basic: { value: vals.completed?.basic?.value ?? 0 } },
+          completionReason:        { basic: { value: vals.completionReason?.basic?.value ?? 0 } },
           kills:                   { basic: { value: vals.kills?.basic?.value || 0 } },
           deaths:                  { basic: { value: vals.deaths?.basic?.value || 0 } },
           activityDurationSeconds: { basic: { value: vals.activityDurationSeconds?.basic?.value || 0 } },
@@ -2089,7 +2099,7 @@
             : (nameCache[act.activityDetails.referenceId] || ('hash:' + act.activityDetails.directorActivityHash));
           const gamePrefix = isD1 ? 'D1' : 'D2';
           const key = `${gamePrefix}:${name}`;
-          const completed = (act.values?.completed?.basic?.value ?? 0) === 1;
+          const completed = isActualClear(act.values);
           if (completed && !seenCleared.has(key)) {
             firstClearInstances.add(act.activityDetails.instanceId);
             seenCleared.add(key);
@@ -2239,7 +2249,7 @@
         const kills  = Math.round((vals.kills  && vals.kills.basic  && vals.kills.basic.value)  || 0);
         const deaths = Math.round((vals.deaths && vals.deaths.basic && vals.deaths.basic.value) || 0);
         const kd     = deaths > 0 ? (kills / deaths).toFixed(2) : kills > 0 ? '\u221e' : '\u2014';
-        const done   = ((vals.completed && vals.completed.basic && vals.completed.basic.value) || 0) === 1;
+        const done   = isActualClear(vals);
         return '<div class="fireteam-member' + (isMe ? ' is-guardian' : '') + '">' +
                '<div class="member-name">' + name + (isMe ? ' \u25c4' : '') + '</div>' +
                '<div class="member-stat"><div class="member-stat-val">' + kills + '</div><div class="member-stat-lbl">Kills</div></div>' +
@@ -2263,7 +2273,7 @@
       const seenCleared = new Set();
       [...state.rawActivities].forEach(act => {
         const hash = act.activityDetails.directorActivityHash;
-        const completed = (act.values?.completed?.basic?.value ?? 0) === 1;
+        const completed = isActualClear(act.values);
         if (completed && !seenCleared.has(hash)) {
           firstClearInstances.add(act.activityDetails.instanceId);
           seenCleared.add(hash);
@@ -2276,7 +2286,7 @@
         directorActivityHash:  act.activityDetails.directorActivityHash,
         activityName:          state.rawNameCache[act.activityDetails.referenceId] || 'Unknown',
         period:                act.period,
-        completed:             (act.values?.completed?.basic?.value ?? 0) === 1,
+        completed:             isActualClear(act.values),
         markedAsFirstClear:    firstClearInstances.has(act.activityDetails.instanceId),
         durationSeconds:       act.values?.activityDurationSeconds?.basic?.value || 0,
         kills:                 act.values?.kills?.basic?.value || 0,
@@ -2322,9 +2332,7 @@
         });
       }
       if (hideFailed) {
-        filtered = filtered.filter(act =>
-          (act.values?.completed?.basic?.value ?? 0) === 1
-        );
+        filtered = filtered.filter(act => isActualClear(act.values));
       }
       if (activityTypeFilter === 'raids') {
         filtered = filtered.filter(act => raidInstanceIds.has(act.activityDetails.instanceId));
@@ -2358,7 +2366,7 @@
         const isReprised = D1_REPRISED_IN_D2.has(rawName);
         const name = isReprised ? `${rawName} (${isD1 ? 'D1' : 'D2'})` : rawName;
 
-        const completed = (v.completed?.basic?.value ?? 0) === 1;
+        const completed = isActualClear(v);
         const isFirstClr = firstClearInstances.has(instId);
         const playerCount = v.playerCount ? v.playerCount.basic.value : 1;
         const isSoloDungeon = !isRaid && playerCount === 1 && completed;

@@ -1365,6 +1365,17 @@
     // D1 raids that were later reprised in D2 — same name, treated as unique via game tag
     const D1_REPRISED_IN_D2 = new Set(["Vault of Glass", "King's Fall", "Crota's End"]);
 
+    // Known D2 dungeon referenceIds that shipped BEFORE mode 82 (Dungeon) existed in the API.
+    // Shattered Throne (Sep 2018) and Pit of Heresy (Oct 2019) initially appear under mode 4 (Raid).
+    // We identify them by hash so they're correctly classified as dungeons in our UI.
+    // Source: Bungie manifest / dungeon.report community research.
+    const LEGACY_DUNGEON_HASHES = new Set([
+      // Shattered Throne (Forsaken, Sep 2018) — all difficulty variants
+      '2032534090', '2032534091', '2032534093',
+      // Pit of Heresy (Shadowkeep, Oct 2019) — all difficulty variants
+      '1375089621', '785700673', '1107532819',
+    ]);
+
     let state = {
       membershipId: '', membershipType: '',
       displayName: '', displayNameCode: '', characters: [], activeCharId: '',
@@ -2041,14 +2052,22 @@
           showStatus(`Loading ${charLabel}...`, 'info', true);
 
           // Fetch all characters, deduplicate by instanceId (shared activities appear on multiple chars)
+          // We fetch BOTH mode 4 (raid) and mode 82 (dungeon) because early dungeons like
+          // Shattered Throne (Sep 2018) predate mode 82 and appear only in the raid feed.
+          // We reclassify them as dungeons using LEGACY_DUNGEON_HASHES.
           const seen = new Set();
           const allRaids = [], allDungeons = [];
           for (const cid of d2CharIds) {
             const raids    = await fetchAllPages(4,  'raids',    cid);
             const dungeons = await fetchAllPages(82, 'dungeons', cid);
             raids.forEach(a => {
-              if (!seen.has(a.activityDetails.instanceId)) {
-                seen.add(a.activityDetails.instanceId);
+              if (seen.has(a.activityDetails.instanceId)) return;
+              seen.add(a.activityDetails.instanceId);
+              // Reclassify legacy dungeons that appear in the raid feed
+              const refHash = String(a.activityDetails.referenceId || '');
+              if (LEGACY_DUNGEON_HASHES.has(refHash)) {
+                allDungeons.push(a);
+              } else {
                 allRaids.push(a);
               }
             });

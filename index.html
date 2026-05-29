@@ -1457,6 +1457,8 @@
       state.d1Characters = [];
       state.d1ActiveCharId = '';
       state.d1Activities = [];
+      // Clear cached definitions so they don't bleed into a new D1 account lookup
+      Object.keys(d1ActivityDefs).forEach(k => delete d1ActivityDefs[k]);
       document.getElementById('d1Platform').value = '';
       document.getElementById('d1DisplayName').value = '';
       document.getElementById('d1Connected').style.display = 'none';
@@ -1490,6 +1492,10 @@
 
     // ── D1 Activity Fetch ────────────────────────────────────────────────────────
 
+    // Accumulated D1 activity definitions from API (populated by fetchAllD1Pages)
+    // Shape: { [hashString]: { activityName, activityDescription, activityTypeHashName, ... } }
+    const d1ActivityDefs = {};
+
     async function fetchAllD1Pages(mode, label) {
       const all = [];
       let page = 0;
@@ -1497,10 +1503,17 @@
         showStatus(`Scanning D1 ${label}... (page ${page + 1})`, 'info', true);
         const data = await d1ApiFetch(
           `/Destiny/Stats/ActivityHistory/${state.d1MembershipType}/${state.d1MembershipId}/${state.d1ActiveCharId}/` +
-          `?count=250&mode=${mode}&page=${page}&definitions=false`
+          `?count=250&mode=${mode}&page=${page}&definitions=true`
         );
         if (data.ErrorCode !== 1) break;
-        const acts = data.Response?.data?.activities || [];
+        const resp = data.Response?.data || data.Response || {};
+        const acts = resp.activities || [];
+
+        // Merge any activity definitions that came back in this page
+        // D1 API returns definitions under Response.definitions.activities (keyed by hash string)
+        const defs = data.Response?.definitions?.activities || {};
+        Object.assign(d1ActivityDefs, defs);
+
         all.push(...acts);
         if (acts.length < 250) break;
         page++;
@@ -1509,12 +1522,21 @@
     }
 
     function resolveD1Name(act) {
-      // Try to resolve from known D1 raid hashes first
       const refId = String(act.activityDetails?.referenceId || '');
       const dirHash = String(act.activityDetails?.directorActivityHash || '');
-      return D1_RAID_NAMES[refId] || D1_RAID_NAMES[dirHash]
-        || act.activityDetails?.activityTypeHashName
-        || 'D1 Raid';
+
+      // 1. Try API-returned definitions first (most accurate)
+      const defByRef  = d1ActivityDefs[refId];
+      const defByDir  = d1ActivityDefs[dirHash];
+      const apiName   = defByRef?.activityName || defByDir?.activityName;
+      if (apiName && apiName !== 'Unknown' && apiName.trim() !== '') return apiName;
+
+      // 2. Fall back to our hardcoded D1 hash map
+      if (D1_RAID_NAMES[refId])  return D1_RAID_NAMES[refId];
+      if (D1_RAID_NAMES[dirHash]) return D1_RAID_NAMES[dirHash];
+
+      // 3. Last resort
+      return 'D1 Raid';
     }
 
     // Normalize D1 activity to a shape compatible with our renderer

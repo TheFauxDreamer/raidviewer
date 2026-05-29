@@ -1089,7 +1089,7 @@
     <div class="d1-setup" id="d1SetupPanel">
       <div class="d1-setup-title">Destiny 1 — Optional</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:14px;font-family:'Share Tech Mono',monospace;line-height:1.5;">
-        Select your D1 platform and enter your membership ID to include Destiny 1 raids in the unified history.
+        Search for your D1 guardian by platform gamertag to include Destiny 1 raids in the unified history.
       </div>
       <div class="d1-setup-grid">
         <div>
@@ -1101,14 +1101,17 @@
           </select>
         </div>
         <div>
-          <label>Membership ID</label>
-          <input type="text" id="d1MembershipId" placeholder="e.g. 4611686018..." style="margin-bottom:0;" />
+          <label>Gamertag / PSN ID</label>
+          <input type="text" id="d1DisplayName" placeholder="e.g. TheFauxDreamer" style="margin-bottom:0;"
+            onkeydown="if(event.key==='Enter') lookupD1Characters()" />
         </div>
         <div class="d1-lookup-btn">
-          <button onclick="lookupD1Characters()" style="border-color:#e8b86d;color:#e8b86d;height:40px;margin-top:0;" onmouseover="this.style.background='#e8b86d';this.style.color='var(--bg)'" onmouseout="this.style.background='transparent';this.style.color='#e8b86d'">Lookup</button>
+          <button onclick="lookupD1Characters()" style="border-color:#e8b86d;color:#e8b86d;height:40px;margin-top:0;" onmouseover="this.style.background='#e8b86d';this.style.color='var(--bg)'" onmouseout="this.style.background='transparent';this.style.color='#e8b86d'">Search</button>
         </div>
       </div>
       <div class="d1-status-msg" id="d1StatusMsg"></div>
+      <!-- Player pick list (when name search returns multiple) -->
+      <div id="d1PlayerList" style="display:none; margin-top:12px; border:1px solid var(--border);"></div>
       <div id="d1CharSelect" style="display:none;">
         <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-top:14px;margin-bottom:8px;">Select Character</div>
         <div class="d1-char-grid" id="d1CharGrid"></div>
@@ -1284,24 +1287,91 @@
 
     async function lookupD1Characters() {
       const platform = document.getElementById('d1Platform').value;
-      const membershipId = document.getElementById('d1MembershipId').value.trim();
+      const displayName = document.getElementById('d1DisplayName').value.trim();
       const msgEl = document.getElementById('d1StatusMsg');
+      const playerList = document.getElementById('d1PlayerList');
       msgEl.style.display = 'none';
+      playerList.style.display = 'none';
+      document.getElementById('d1CharSelect').style.display = 'none';
 
-      if (!platform || !membershipId) {
-        msgEl.textContent = 'Please select a platform and enter your membership ID.';
+      if (!platform) {
+        msgEl.textContent = 'Please select a platform (Xbox or PlayStation).';
+        msgEl.style.color = 'var(--danger)';
+        msgEl.style.display = 'block';
+        return;
+      }
+      if (!displayName) {
+        msgEl.textContent = 'Please enter your gamertag or PSN ID.';
+        msgEl.style.color = 'var(--danger)';
         msgEl.style.display = 'block';
         return;
       }
 
-      msgEl.textContent = 'Looking up D1 guardian...';
+      msgEl.textContent = 'Searching for D1 guardian...';
+      msgEl.style.color = 'var(--ghost)';
+      msgEl.style.display = 'block';
+
+      try {
+        // Step 1: Search by display name to get membershipId(s)
+        const searchData = await d1ApiFetch(`/Destiny/SearchDestinyPlayer/${platform}/${encodeURIComponent(displayName)}/`);
+
+        if (searchData.ErrorCode !== 1) {
+          msgEl.textContent = `D1 API error: ${searchData.Message || 'unknown error'}`;
+          msgEl.style.color = 'var(--danger)';
+          return;
+        }
+
+        const players = searchData.Response || [];
+        if (!players.length) {
+          msgEl.textContent = `No D1 guardian found for "${displayName}" on ${platform === '1' ? 'Xbox' : 'PlayStation'}. Check the name and platform.`;
+          msgEl.style.color = 'var(--danger)';
+          return;
+        }
+
+        msgEl.style.display = 'none';
+
+        if (players.length === 1) {
+          // Only one match — go straight to character select
+          await loadD1AccountSummary(platform, players[0].membershipId, players[0].displayName);
+        } else {
+          // Multiple matches — show a pick list
+          playerList.innerHTML = '';
+          players.forEach(p => {
+            const row = document.createElement('div');
+            row.style.cssText = 'padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:background 0.15s;font-family:Share Tech Mono,monospace;font-size:13px;color:var(--ghost);';
+            row.textContent = p.displayName;
+            const code = document.createElement('span');
+            code.style.cssText = 'font-size:11px;color:var(--muted);';
+            code.textContent = p.membershipId;
+            row.appendChild(code);
+            row.onmouseover = () => row.style.background = 'rgba(75,143,200,0.08)';
+            row.onmouseout  = () => row.style.background = '';
+            row.onclick = () => {
+              playerList.style.display = 'none';
+              loadD1AccountSummary(platform, p.membershipId, p.displayName);
+            };
+            playerList.appendChild(row);
+          });
+          playerList.style.display = 'block';
+        }
+      } catch (e) {
+        msgEl.textContent = 'Search failed. The D1 API may be temporarily unavailable.';
+        msgEl.style.color = 'var(--danger)';
+        msgEl.style.display = 'block';
+      }
+    }
+
+    async function loadD1AccountSummary(platform, membershipId, displayName) {
+      const msgEl = document.getElementById('d1StatusMsg');
+      msgEl.textContent = `Loading ${displayName}'s D1 profile...`;
       msgEl.style.color = 'var(--ghost)';
       msgEl.style.display = 'block';
 
       try {
         const data = await d1ApiFetch(`/Destiny/${platform}/Account/${membershipId}/Summary/`);
+
         if (data.ErrorCode !== 1 || !data.Response?.data) {
-          msgEl.textContent = 'Could not find this guardian. Check your platform and membership ID.';
+          msgEl.textContent = 'Could not load D1 profile. Try again.';
           msgEl.style.color = 'var(--danger)';
           return;
         }
@@ -1332,27 +1402,27 @@
           div.innerHTML = `<div class="char-class ${cls.toLowerCase()}">${cls}</div>
             <div class="char-light">${light}</div>
             <div class="char-race">${race}</div>`;
-          div.onclick = () => selectD1Char(charId, cls);
+          div.onclick = () => selectD1Char(charId, cls, displayName);
           grid.appendChild(div);
         });
 
-        document.getElementById('d1CharSelect').style.display = 'block';
         msgEl.style.display = 'none';
+        document.getElementById('d1CharSelect').style.display = 'block';
       } catch (e) {
-        msgEl.textContent = 'Failed to load D1 profile. The D1 API may be unavailable.';
+        msgEl.textContent = 'Failed to load D1 profile.';
         msgEl.style.color = 'var(--danger)';
         msgEl.style.display = 'block';
       }
     }
 
-    function selectD1Char(charId, cls) {
+    function selectD1Char(charId, cls, displayName) {
       state.d1ActiveCharId = charId;
       document.querySelectorAll('.d1-char-option').forEach(el => {
         el.classList.toggle('active', el.dataset.charid === charId);
       });
       const platformName = PLATFORM_NAMES[parseInt(state.d1MembershipType)] || 'Unknown';
       document.getElementById('d1ConnectedText').textContent =
-        `D1 ${cls} linked · ${platformName}`;
+        `${displayName || 'D1 Guardian'} · ${cls} · ${platformName}`;
       document.getElementById('d1Connected').style.display = 'flex';
       document.getElementById('d1CharSelect').style.display = 'none';
       document.getElementById('d1StatusMsg').style.display = 'none';
@@ -1367,9 +1437,10 @@
       state.d1ActiveCharId = '';
       state.d1Activities = [];
       document.getElementById('d1Platform').value = '';
-      document.getElementById('d1MembershipId').value = '';
+      document.getElementById('d1DisplayName').value = '';
       document.getElementById('d1Connected').style.display = 'none';
       document.getElementById('d1CharSelect').style.display = 'none';
+      document.getElementById('d1PlayerList').style.display = 'none';
       document.getElementById('d1StatusMsg').style.display = 'none';
       document.getElementById('sumD1Stat').style.display = 'none';
       if (state.activeCharId) loadAllHistory();

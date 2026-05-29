@@ -960,6 +960,10 @@
       position: relative;
       overflow: hidden;
     }
+    #d2SetupPanel::before {
+      content: 'D2';
+      color: rgba(75, 143, 200, 0.04);
+    }
     .d1-setup::before {
       content: 'D1';
       position: absolute;
@@ -1123,14 +1127,28 @@
       </div>
     </div>
 
-<div class="search-section">
-      <label class="search-label">Search Guardian</label>
-      <div class="search-row">
-        <input type="text" id="searchInput" placeholder="BungieName or BungieName#1234"
-          onkeydown="if(event.key==='Enter') search()" />
-        <button id="searchBtn" onclick="search()">Search</button>
+<!-- ── Destiny 2 Setup ─────────────────────────────────────────────────── -->
+    <div class="d1-setup" id="d2SetupPanel" style="border-left-color:var(--accent2);">
+      <div class="d1-setup-title" style="color:var(--accent2);">Destiny 2 — Optional</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px;font-family:'Share Tech Mono',monospace;line-height:1.5;">
+        Search for your D2 guardian by Bungie name to include Destiny 2 raids and dungeons.
       </div>
-      <div class="search-hint">Search by name alone or include #code to find an exact match</div>
+      <div class="d1-setup-grid">
+        <div style="grid-column:1/3;">
+          <label>Bungie Name</label>
+          <input type="text" id="searchInput" placeholder="BungieName or BungieName#1234"
+            onkeydown="if(event.key==='Enter') search()" style="margin-bottom:0;" />
+        </div>
+        <div>
+          <button id="searchBtn" onclick="search()" style="height:40px;margin-top:0;">Search</button>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;font-family:'Share Tech Mono',monospace;">Search by name alone or include #code for exact match</div>
+      <div class="d1-connected" id="d2Connected" style="display:none;border-top:1px solid var(--border);margin-top:12px;padding-top:12px;">
+        <div class="d1-connected-dot" style="background:var(--accent2);"></div>
+        <span id="d2ConnectedText">D2 Guardian linked</span>
+        <span style="margin-left:auto;cursor:pointer;color:var(--muted);font-size:10px;" onclick="clearD2()">✕ Clear</span>
+      </div>
     </div>
 
     <div class="status-bar" id="statusBar">
@@ -1146,10 +1164,11 @@
         <div class="guardian-code" id="guardianCode"></div>
       </div>
 
-      <div class="section-title">Characters</div>
-      <div class="char-tabs" id="charTabs"></div>
-
-      <div class="deco-line"></div>
+      <div id="d2CharSection">
+        <div class="section-title">D2 Characters</div>
+        <div class="char-tabs" id="charTabs"></div>
+        <div class="deco-line"></div>
+      </div>
 
       <div class="section-title">
         Raid &amp; Dungeon History
@@ -1427,8 +1446,9 @@
       document.getElementById('d1Connected').style.display = 'flex';
       document.getElementById('d1CharSelect').style.display = 'none';
       document.getElementById('d1StatusMsg').style.display = 'none';
-      // If D2 profile already loaded, reload to include D1
-      if (state.activeCharId) loadAllHistory();
+      // Show profile section and load history regardless of D2
+      showProfileSection();
+      loadAllHistory();
     }
 
     function clearD1() {
@@ -1444,7 +1464,28 @@
       document.getElementById('d1PlayerList').style.display = 'none';
       document.getElementById('d1StatusMsg').style.display = 'none';
       document.getElementById('sumD1Stat').style.display = 'none';
-      if (state.activeCharId) loadAllHistory();
+      if (state.activeCharId || state.d1ActiveCharId) loadAllHistory();
+    }
+
+    function clearD2() {
+      state.membershipId = '';
+      state.membershipType = '';
+      state.displayName = '';
+      state.displayNameCode = '';
+      state.characters = [];
+      state.activeCharId = '';
+      document.getElementById('searchInput').value = '';
+      document.getElementById('resultsList').style.display = 'none';
+      document.getElementById('d2Connected').style.display = 'none';
+      document.getElementById('d2CharSection').style.display = 'none';
+      document.getElementById('charTabs').innerHTML = '';
+      // Update header to reflect D1-only state, or hide profile if nothing left
+      if (state.d1ActiveCharId) {
+        updateProfileHeader();
+        loadAllHistory();
+      } else {
+        document.getElementById('profile-section').style.display = 'none';
+      }
     }
 
     // ── D1 Activity Fetch ────────────────────────────────────────────────────────
@@ -1629,6 +1670,36 @@
 
     // ── Profile ─────────────────────────────────────────────────────────────────
 
+    function showProfileSection() {
+      document.getElementById('profile-section').style.display = 'block';
+      updateProfileHeader();
+    }
+
+    function updateProfileHeader() {
+      const hasD2 = !!state.activeCharId;
+      const hasD1 = !!state.d1ActiveCharId;
+      const d1Name = document.getElementById('d1ConnectedText').textContent.split(' · ')[0];
+
+      if (hasD2 && hasD1) {
+        document.getElementById('guardianName').textContent = state.displayName;
+        document.getElementById('guardianCode').textContent =
+          '#' + String(state.displayNameCode).padStart(4, '0') +
+          ' · ' + (PLATFORM_NAMES[state.membershipType] || '') +
+          '  +  D1: ' + d1Name;
+      } else if (hasD2) {
+        document.getElementById('guardianName').textContent = state.displayName;
+        document.getElementById('guardianCode').textContent =
+          '#' + String(state.displayNameCode).padStart(4, '0') + ' · ' + (PLATFORM_NAMES[state.membershipType] || '');
+      } else if (hasD1) {
+        document.getElementById('guardianName').textContent = d1Name;
+        document.getElementById('guardianCode').textContent =
+          'Destiny 1 · ' + (PLATFORM_NAMES[parseInt(state.d1MembershipType)] || '');
+      }
+
+      // Show/hide D2 character tabs
+      document.getElementById('d2CharSection').style.display = hasD2 ? 'block' : 'none';
+    }
+
     async function loadProfile(player) {
       showStatus('Loading guardian profile...', 'info', true);
       state.membershipId = player.membershipId;
@@ -1645,12 +1716,13 @@
 
         state.characters = Object.values(chars).sort((a, b) => new Date(b.dateLastPlayed) - new Date(a.dateLastPlayed));
 
-        document.getElementById('guardianName').textContent = state.displayName;
-        document.getElementById('guardianCode').textContent =
-          '#' + String(state.displayNameCode).padStart(4, '0') + ' · ' + (PLATFORM_NAMES[state.membershipType] || '');
-
         renderCharTabs();
-        document.getElementById('profile-section').style.display = 'block';
+        // Show D2 connected badge
+        document.getElementById('d2ConnectedText').textContent =
+          state.displayName + ' · ' + (PLATFORM_NAMES[state.membershipType] || '');
+        document.getElementById('d2Connected').style.display = 'flex';
+
+        showProfileSection();
         hideStatus();
 
         if (state.characters.length) selectChar(state.characters[0].characterId);
@@ -1680,6 +1752,7 @@
     function selectChar(charId) {
       state.activeCharId = charId;
       document.querySelectorAll('.char-tab').forEach(t => t.classList.toggle('active', t.dataset.charid === charId));
+      updateProfileHeader();
       loadAllHistory();
     }
 
@@ -1729,19 +1802,22 @@
       document.getElementById('activityCount').textContent = '';
 
       try {
-        // ── Fetch D2 raids + dungeons ────────────────────────────────────────────
-        const raids = await fetchAllPages(4, 'raids');
-        const dungeons = await fetchAllPages(82, 'dungeons');
+        // ── Fetch D2 raids + dungeons (skip if no D2 character selected) ─────────
+        let d2all = [];
+        let d2RaidInstanceIds = new Set();
 
-        const d2all = [...raids, ...dungeons].sort((a, b) => new Date(a.period) - new Date(b.period));
+        if (state.activeCharId) {
+          const raids = await fetchAllPages(4, 'raids');
+          const dungeons = await fetchAllPages(82, 'dungeons');
+          d2all = [...raids, ...dungeons].sort((a, b) => new Date(a.period) - new Date(b.period));
 
-        // Resolve D2 names
-        const uniqueHashes = [...new Set(d2all.map(a => a.activityDetails.referenceId))];
-        await resolveNames(uniqueHashes);
+          // Resolve D2 names
+          const uniqueHashes = [...new Set(d2all.map(a => a.activityDetails.referenceId))];
+          await resolveNames(uniqueHashes);
 
-        // Tag D2 activities and build raid set
-        const d2RaidInstanceIds = new Set(raids.map(r => r.activityDetails.instanceId));
-        d2all.forEach(act => { act._isD1 = false; });
+          d2RaidInstanceIds = new Set(raids.map(r => r.activityDetails.instanceId));
+          d2all.forEach(act => { act._isD1 = false; });
+        }
 
         // ── Fetch D1 raids (mode 4) if linked ───────────────────────────────────
         let d1all = [];
@@ -1790,8 +1866,11 @@
           ...d1all.map(a => a.activityDetails.instanceId),
         ]);
 
-        // Show/hide D1 summary stat
-        document.getElementById('sumD1Stat').style.display = state.d1ActiveCharId ? '' : 'none';
+        // Show D1 clears stat only when both games are loaded (otherwise it's redundant)
+        const bothGames = state.activeCharId && state.d1ActiveCharId;
+        document.getElementById('sumD1Stat').style.display = bothGames ? '' : 'none';
+        // Also update profile header whenever history reloads (char selection may have changed)
+        updateProfileHeader();
 
         hideStatus();
         renderActivities(all, firstClearInstances, raidInstanceIds);
@@ -2128,6 +2207,21 @@
       document.getElementById('sumD1').textContent = d1Clears;
       document.getElementById('summaryBar').style.display = 'flex';
       document.getElementById('filterBar').style.display = 'flex';
+
+      // Show/hide filter options based on what games are loaded
+      const d1Only = state.d1ActiveCharId && !state.activeCharId;
+      const d2Only = state.activeCharId && !state.d1ActiveCharId;
+      const sel = document.getElementById('activityTypeSelect');
+      sel.querySelector('option[value="dungeons"]').style.display = d1Only ? 'none' : '';
+      sel.querySelector('option[value="d1"]').style.display    = d2Only ? 'none' : '';
+      sel.querySelector('option[value="d2"]').style.display    = d1Only ? 'none' : '';
+      sel.querySelector('option[value="both"]').textContent    = d1Only ? 'All Raids' : 'Both';
+      // Reset to 'both' if current filter is now invalid
+      if ((d1Only && (activityTypeFilter === 'dungeons' || activityTypeFilter === 'd2')) ||
+          (d2Only && activityTypeFilter === 'd1')) {
+        activityTypeFilter = 'both';
+        sel.value = 'both';
+      }
     }
 
     // ── Fireteam expand ───────────────────────────────────────────────────────────

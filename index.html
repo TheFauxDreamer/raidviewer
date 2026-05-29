@@ -1522,11 +1522,11 @@
 
     function selectD1Char(charId, cls, displayName) {
       state.loadAllD1 = false;
-      state.d1ActiveCharId = charId;
-      // Populate charClassMap for all D1 characters
+      state.d1ActiveCharId = String(charId);
+      // Populate charClassMap for all D1 characters (keys as strings)
       state.d1Characters.forEach(c => {
         const cid = c.characterBase?.characterId;
-        if (cid) charClassMap[cid] = CLASS_NAMES[c.characterBase?.classType] || 'Unknown';
+        if (cid) charClassMap[String(cid)] = CLASS_NAMES[c.characterBase?.classType] || 'Unknown';
       });
       document.querySelectorAll('.d1-char-option').forEach(el => {
         el.classList.toggle('active', el.dataset.charid === charId);
@@ -1594,25 +1594,43 @@
     async function fetchAllD1Pages(mode, label, charId) {
       const all = [];
       let page = 0;
-      const cls = CLASS_NAMES[
-        state.d1Characters.find(c => c.characterBase?.characterId === charId)?.characterBase?.classType
-      ] || 'character';
+      // charId from d1Characters is stored as a string in characterBase.characterId
+      // Ensure string comparison works correctly
+      const charIdStr = String(charId);
+      const d1Char = state.d1Characters.find(c =>
+        String(c.characterBase?.characterId) === charIdStr
+      );
+      const cls = CLASS_NAMES[d1Char?.characterBase?.classType] || 'Guardian';
       while (true) {
         showStatus(`Scanning D1 ${label} (${cls})... page ${page + 1}`, 'info', true);
-        const data = await d1ApiFetch(
-          `/Destiny/Stats/ActivityHistory/${state.d1MembershipType}/${state.d1MembershipId}/${charId}/` +
-          `?count=250&mode=${mode}&page=${page}&definitions=true`
-        );
-        if (data.ErrorCode !== 1) break;
-        const resp = data.Response?.data || data.Response || {};
-        const acts = resp.activities || [];
+        let data;
+        try {
+          data = await d1ApiFetch(
+            `/Destiny/Stats/ActivityHistory/${state.d1MembershipType}/${state.d1MembershipId}/${charIdStr}/` +
+            `?count=250&mode=${mode}&page=${page}&definitions=true`
+          );
+        } catch (e) {
+          console.warn(`D1 fetch error for char ${charIdStr} page ${page}:`, e);
+          break;
+        }
 
-        // Merge activity definitions
+        if (!data || data.ErrorCode !== 1) {
+          console.warn(`D1 API non-1 response for char ${charIdStr} page ${page}:`, data?.ErrorCode, data?.Message);
+          break;
+        }
+
+        // D1 response shape with definitions=true:
+        // data.Response.data.activities  (activities array)
+        // data.Response.definitions.activities  (hash -> definition map)
+        const resp = data.Response?.data || {};
+        const acts = Array.isArray(resp.activities) ? resp.activities : [];
+
+        // Merge activity definitions keyed by hash string
         const defs = data.Response?.definitions?.activities || {};
         Object.assign(d1ActivityDefs, defs);
 
         // Tag each activity with the character it came from
-        acts.forEach(a => { a._characterId = charId; });
+        acts.forEach(a => { a._characterId = charIdStr; });
         all.push(...acts);
         if (acts.length < 250) break;
         page++;
@@ -1918,6 +1936,16 @@
       state.loadAllD1 = !state.loadAllD1;
       const btn = document.getElementById('loadAllD1Btn');
       if (btn) btn.classList.toggle('active', state.loadAllD1);
+      if (state.loadAllD1) {
+        // Deselect any individually-selected D1 char so the UI is clear
+        document.querySelectorAll('.d1-char-option').forEach(el => el.classList.remove('active'));
+        // Populate charClassMap for all D1 chars now (in case no char was selected yet)
+        state.d1Characters.forEach(c => {
+          const cid = c.characterBase?.characterId;
+          if (cid) charClassMap[String(cid)] = CLASS_NAMES[c.characterBase?.classType] || 'Unknown';
+        });
+        showProfileSection();
+      }
       loadAllHistory();
     }
 
@@ -2015,8 +2043,8 @@
         // ── Determine which D1 characters to fetch ───────────────────────────────
         let d1all = [];
         const d1CharIds = state.loadAllD1
-          ? state.d1Characters.map(c => c.characterBase?.characterId).filter(Boolean)
-          : (state.d1ActiveCharId ? [state.d1ActiveCharId] : []);
+          ? state.d1Characters.map(c => c.characterBase?.characterId).filter(Boolean).map(String)
+          : (state.d1ActiveCharId ? [String(state.d1ActiveCharId)] : []);
 
         if (d1CharIds.length) {
           const charCount = d1CharIds.length;

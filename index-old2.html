@@ -928,7 +928,146 @@
       }
       .member-stat:nth-child(4) { display: none; }
     }
-  
+
+    /* ── Game badge (D1 / D2) ── */
+    .game-badge {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border: 1px solid;
+      white-space: nowrap;
+    }
+    .game-badge.d1 {
+      color: #e8b86d;
+      border-color: rgba(232, 184, 109, 0.5);
+      background: rgba(232, 184, 109, 0.08);
+    }
+    .game-badge.d2 {
+      color: var(--accent2);
+      border-color: rgba(75, 143, 200, 0.4);
+      background: rgba(75, 143, 200, 0.06);
+    }
+
+    /* ── D1 Setup Panel ── */
+    .d1-setup {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid #e8b86d;
+      padding: 20px 24px;
+      margin-bottom: 28px;
+      position: relative;
+      overflow: hidden;
+    }
+    #d2SetupPanel::before {
+      content: 'D2';
+      color: rgba(75, 143, 200, 0.04);
+    }
+    .d1-setup::before {
+      content: 'D1';
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 64px;
+      font-weight: 700;
+      color: rgba(232, 184, 109, 0.04);
+      font-family: 'Rajdhani', sans-serif;
+      letter-spacing: 0.1em;
+      pointer-events: none;
+      line-height: 1;
+    }
+    .d1-setup-title {
+      font-size: 11px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: #e8b86d;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .d1-setup-title::before {
+      content: '◆';
+      font-size: 8px;
+    }
+    .d1-setup-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+    .d1-setup-grid label {
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 5px;
+    }
+    .d1-setup-grid select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      width: 100%;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .d1-setup-grid select:focus { border-color: #e8b86d; }
+    .d1-connected {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      font-size: 11px;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--success);
+    }
+    .d1-connected-dot {
+      width: 7px; height: 7px;
+      background: var(--success);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .d1-status-msg {
+      margin-top: 10px;
+      font-size: 11px;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--danger);
+      display: none;
+    }
+    .d1-char-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .d1-char-option {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+    }
+    .d1-char-option:hover { border-color: #e8b86d; }
+    .d1-char-option.active {
+      border-color: #e8b86d;
+      background: rgba(232, 184, 109, 0.08);
+    }
+    .d1-char-option .char-class { font-size: 12px; }
+    .d1-char-option .char-light { font-size: 16px; }
+    @media (max-width: 600px) {
+      .d1-setup-grid { grid-template-columns: 1fr 1fr; }
+      .d1-setup-grid .d1-lookup-btn { grid-column: 1 / -1; }
+    }
   </style>
 </head>
 
@@ -945,19 +1084,71 @@
       </svg>
       <div class="header-text">
         <h1>Ghost</h1>
-        <p>Destiny 2 · Raid &amp; Dungeon History</p>
+        <p>Destiny 1 &amp; 2 · Raid &amp; Dungeon History</p>
       </div>
     </header>
 
 
-<div class="search-section">
-      <label class="search-label">Search Guardian</label>
-      <div class="search-row">
-        <input type="text" id="searchInput" placeholder="BungieName or BungieName#1234"
-          onkeydown="if(event.key==='Enter') search()" />
-        <button id="searchBtn" onclick="search()">Search</button>
+    <!-- ── Destiny 1 Setup ─────────────────────────────────────────────────── -->
+    <div class="d1-setup" id="d1SetupPanel">
+      <div class="d1-setup-title">Destiny 1 — Optional</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px;font-family:'Share Tech Mono',monospace;line-height:1.5;">
+        Search for your D1 guardian by platform gamertag to include Destiny 1 raids in the unified history.
       </div>
-      <div class="search-hint">Search by name alone or include #code to find an exact match</div>
+      <div class="d1-setup-grid">
+        <div>
+          <label>Platform</label>
+          <select id="d1Platform">
+            <option value="">— Select —</option>
+            <option value="1">Xbox</option>
+            <option value="2">PlayStation</option>
+          </select>
+        </div>
+        <div>
+          <label>Gamertag / PSN ID</label>
+          <input type="text" id="d1DisplayName" placeholder="e.g. TheFauxDreamer" style="margin-bottom:0;"
+            onkeydown="if(event.key==='Enter') lookupD1Characters()" />
+        </div>
+        <div class="d1-lookup-btn">
+          <button onclick="lookupD1Characters()" style="border-color:#e8b86d;color:#e8b86d;height:40px;margin-top:0;" onmouseover="this.style.background='#e8b86d';this.style.color='var(--bg)'" onmouseout="this.style.background='transparent';this.style.color='#e8b86d'">Search</button>
+        </div>
+      </div>
+      <div class="d1-status-msg" id="d1StatusMsg"></div>
+      <!-- Player pick list (when name search returns multiple) -->
+      <div id="d1PlayerList" style="display:none; margin-top:12px; border:1px solid var(--border);"></div>
+      <div id="d1CharSelect" style="display:none;">
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-top:14px;margin-bottom:8px;">Select Character</div>
+        <div class="d1-char-grid" id="d1CharGrid"></div>
+      </div>
+      <div class="d1-connected" id="d1Connected" style="display:none;">
+        <div class="d1-connected-dot"></div>
+        <span id="d1ConnectedText">D1 Guardian linked</span>
+        <span style="margin-left:auto;cursor:pointer;color:var(--muted);font-size:10px;" onclick="clearD1()">✕ Clear</span>
+      </div>
+    </div>
+
+<!-- ── Destiny 2 Setup ─────────────────────────────────────────────────── -->
+    <div class="d1-setup" id="d2SetupPanel" style="border-left-color:var(--accent2);">
+      <div class="d1-setup-title" style="color:var(--accent2);">Destiny 2 — Optional</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px;font-family:'Share Tech Mono',monospace;line-height:1.5;">
+        Search for your D2 guardian by Bungie name to include Destiny 2 raids and dungeons.
+      </div>
+      <div class="d1-setup-grid">
+        <div style="grid-column:1/3;">
+          <label>Bungie Name</label>
+          <input type="text" id="searchInput" placeholder="BungieName or BungieName#1234"
+            onkeydown="if(event.key==='Enter') search()" style="margin-bottom:0;" />
+        </div>
+        <div>
+          <button id="searchBtn" onclick="search()" style="height:40px;margin-top:0;">Search</button>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;font-family:'Share Tech Mono',monospace;">Search by name alone or include #code for exact match</div>
+      <div class="d1-connected" id="d2Connected" style="display:none;border-top:1px solid var(--border);margin-top:12px;padding-top:12px;">
+        <div class="d1-connected-dot" style="background:var(--accent2);"></div>
+        <span id="d2ConnectedText">D2 Guardian linked</span>
+        <span style="margin-left:auto;cursor:pointer;color:var(--muted);font-size:10px;" onclick="clearD2()">✕ Clear</span>
+      </div>
     </div>
 
     <div class="status-bar" id="statusBar">
@@ -973,10 +1164,11 @@
         <div class="guardian-code" id="guardianCode"></div>
       </div>
 
-      <div class="section-title">Characters</div>
-      <div class="char-tabs" id="charTabs"></div>
-
-      <div class="deco-line"></div>
+      <div id="d2CharSection">
+        <div class="section-title">D2 Characters</div>
+        <div class="char-tabs" id="charTabs"></div>
+        <div class="deco-line"></div>
+      </div>
 
       <div class="section-title">
         Raid &amp; Dungeon History
@@ -1004,6 +1196,10 @@
           <div class="summary-val" id="sumDungeons">—</div>
           <div class="summary-lbl">Dungeon Clears</div>
         </div>
+        <div class="summary-stat" id="sumD1Stat" style="display:none;">
+          <div class="summary-val" id="sumD1">—</div>
+          <div class="summary-lbl">D1 Clears</div>
+        </div>
       </div>
 
       <div class="filter-bar" id="filterBar" style="display:none;">
@@ -1024,6 +1220,8 @@
             <option value="both">Both</option>
             <option value="raids">Raids Only</option>
             <option value="dungeons">Dungeons Only</option>
+            <option value="d1">Destiny 1</option>
+            <option value="d2">Destiny 2</option>
           </select>
           <button id="downloadBtn" class="secondary" onclick="downloadData()">⬇ Download Raw Data</button>
         </div>
@@ -1044,9 +1242,38 @@
     const RACE_NAMES = { 0: 'Human', 1: 'Awoken', 2: 'Exo', 3: 'Unknown' };
     const PLATFORM_NAMES = { 1: 'Xbox', 2: 'PSN', 3: 'Steam', 4: 'Blizzard', 5: 'Stadia', 6: 'Epic', 254: 'BungieNet', 0: 'None' };
 
+    // ── Destiny 1 Raid definitions ───────────────────────────────────────────────
+    // D1 uses mode 4 (Raid) for all raids. These are the known D1 raid names.
+    // We tag them with [D1] prefix to differentiate from D2 reprises.
+    const D1_RAID_NAMES = {
+      // Vault of Glass (original D1 — different from D2 reprise)
+      '3585877785': 'Vault of Glass',
+      '3585877784': 'Vault of Glass',
+      '1699791572': 'Vault of Glass',
+      // Crota's End
+      '1836893116': "Crota's End",
+      '1836893119': "Crota's End",
+      '1369718958': "Crota's End",
+      // King's Fall (original D1 — different from D2 reprise)
+      '1733556769': "King's Fall",
+      '1733556770': "King's Fall",
+      '1733556768': "King's Fall",
+      // Wrath of the Machine
+      '2204484102': 'Wrath of the Machine',
+      '2204484101': 'Wrath of the Machine',
+      '2204484100': 'Wrath of the Machine',
+    };
+
+    // D1 raids that were later reprised in D2 — same name, treated as unique via game tag
+    const D1_REPRISED_IN_D2 = new Set(["Vault of Glass", "King's Fall", "Crota's End"]);
+
     let state = {
       membershipId: '', membershipType: '',
-      displayName: '', displayNameCode: '', characters: [], activeCharId: ''
+      displayName: '', displayNameCode: '', characters: [], activeCharId: '',
+      // D1 state
+      d1MembershipId: '', d1MembershipType: '',
+      d1Characters: [], d1ActiveCharId: '', d1CharacterName: '',
+      d1Activities: [],
     };
 
     // Name cache: hash → string
@@ -1068,6 +1295,270 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       }).then(r => r.json());
+    }
+
+    // D1 uses the same /Platform base as D2 — paths are /Destiny/... not /Destiny2/...
+    // The proxy already points to https://www.bungie.net/Platform so no prefix needed.
+    function d1ApiFetch(path) {
+      return apiFetch(path);
+    }
+
+    // ── D1 Setup ─────────────────────────────────────────────────────────────────
+
+    async function lookupD1Characters() {
+      const platform = document.getElementById('d1Platform').value;
+      const displayName = document.getElementById('d1DisplayName').value.trim();
+      const msgEl = document.getElementById('d1StatusMsg');
+      const playerList = document.getElementById('d1PlayerList');
+      msgEl.style.display = 'none';
+      playerList.style.display = 'none';
+      document.getElementById('d1CharSelect').style.display = 'none';
+
+      if (!platform) {
+        msgEl.textContent = 'Please select a platform (Xbox or PlayStation).';
+        msgEl.style.color = 'var(--danger)';
+        msgEl.style.display = 'block';
+        return;
+      }
+      if (!displayName) {
+        msgEl.textContent = 'Please enter your gamertag or PSN ID.';
+        msgEl.style.color = 'var(--danger)';
+        msgEl.style.display = 'block';
+        return;
+      }
+
+      msgEl.textContent = 'Searching for D1 guardian...';
+      msgEl.style.color = 'var(--ghost)';
+      msgEl.style.display = 'block';
+
+      try {
+        // Step 1: Search by display name to get membershipId(s)
+        const searchData = await d1ApiFetch(`/Destiny/SearchDestinyPlayer/${platform}/${encodeURIComponent(displayName)}/`);
+
+        if (searchData.ErrorCode !== 1) {
+          msgEl.textContent = `D1 API error: ${searchData.Message || 'unknown error'}`;
+          msgEl.style.color = 'var(--danger)';
+          return;
+        }
+
+        const players = searchData.Response || [];
+        if (!players.length) {
+          msgEl.textContent = `No D1 guardian found for "${displayName}" on ${platform === '1' ? 'Xbox' : 'PlayStation'}. Check the name and platform.`;
+          msgEl.style.color = 'var(--danger)';
+          return;
+        }
+
+        msgEl.style.display = 'none';
+
+        if (players.length === 1) {
+          // Only one match — go straight to character select
+          await loadD1AccountSummary(platform, players[0].membershipId, players[0].displayName);
+        } else {
+          // Multiple matches — show a pick list
+          playerList.innerHTML = '';
+          players.forEach(p => {
+            const row = document.createElement('div');
+            row.style.cssText = 'padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:background 0.15s;font-family:Share Tech Mono,monospace;font-size:13px;color:var(--ghost);';
+            row.textContent = p.displayName;
+            const code = document.createElement('span');
+            code.style.cssText = 'font-size:11px;color:var(--muted);';
+            code.textContent = p.membershipId;
+            row.appendChild(code);
+            row.onmouseover = () => row.style.background = 'rgba(75,143,200,0.08)';
+            row.onmouseout  = () => row.style.background = '';
+            row.onclick = () => {
+              playerList.style.display = 'none';
+              loadD1AccountSummary(platform, p.membershipId, p.displayName);
+            };
+            playerList.appendChild(row);
+          });
+          playerList.style.display = 'block';
+        }
+      } catch (e) {
+        msgEl.textContent = 'Search failed. The D1 API may be temporarily unavailable.';
+        msgEl.style.color = 'var(--danger)';
+        msgEl.style.display = 'block';
+      }
+    }
+
+    async function loadD1AccountSummary(platform, membershipId, displayName) {
+      const msgEl = document.getElementById('d1StatusMsg');
+      msgEl.textContent = `Loading ${displayName}'s D1 profile...`;
+      msgEl.style.color = 'var(--ghost)';
+      msgEl.style.display = 'block';
+
+      try {
+        const data = await d1ApiFetch(`/Destiny/${platform}/Account/${membershipId}/Summary/`);
+
+        if (data.ErrorCode !== 1 || !data.Response?.data) {
+          msgEl.textContent = 'Could not load D1 profile. Try again.';
+          msgEl.style.color = 'var(--danger)';
+          return;
+        }
+
+        const account = data.Response.data;
+        const chars = account.characters || [];
+        if (!chars.length) {
+          msgEl.textContent = 'No characters found on this D1 account.';
+          msgEl.style.color = 'var(--danger)';
+          return;
+        }
+
+        state.d1MembershipType = platform;
+        state.d1MembershipId = membershipId;
+        state.d1Characters = chars;
+
+        // Render character picker
+        const grid = document.getElementById('d1CharGrid');
+        grid.innerHTML = '';
+        chars.forEach(c => {
+          const cls = CLASS_NAMES[c.characterBase?.classType] || 'Unknown';
+          const light = c.characterBase?.powerLevel || c.characterLevel || '?';
+          const race = RACE_NAMES[c.characterBase?.raceType] || '';
+          const charId = c.characterBase?.characterId;
+          const div = document.createElement('div');
+          div.className = 'd1-char-option';
+          div.dataset.charid = charId;
+          div.innerHTML = `<div class="char-class ${cls.toLowerCase()}">${cls}</div>
+            <div class="char-light">${light}</div>
+            <div class="char-race">${race}</div>`;
+          div.onclick = () => selectD1Char(charId, cls, displayName);
+          grid.appendChild(div);
+        });
+
+        msgEl.style.display = 'none';
+        document.getElementById('d1CharSelect').style.display = 'block';
+      } catch (e) {
+        msgEl.textContent = 'Failed to load D1 profile.';
+        msgEl.style.color = 'var(--danger)';
+        msgEl.style.display = 'block';
+      }
+    }
+
+    function selectD1Char(charId, cls, displayName) {
+      state.d1ActiveCharId = charId;
+      document.querySelectorAll('.d1-char-option').forEach(el => {
+        el.classList.toggle('active', el.dataset.charid === charId);
+      });
+      const platformName = PLATFORM_NAMES[parseInt(state.d1MembershipType)] || 'Unknown';
+      document.getElementById('d1ConnectedText').textContent =
+        `${displayName || 'D1 Guardian'} · ${cls} · ${platformName}`;
+      document.getElementById('d1Connected').style.display = 'flex';
+      document.getElementById('d1CharSelect').style.display = 'none';
+      document.getElementById('d1StatusMsg').style.display = 'none';
+      // Show profile section and load history regardless of D2
+      showProfileSection();
+      loadAllHistory();
+    }
+
+    function clearD1() {
+      state.d1MembershipId = '';
+      state.d1MembershipType = '';
+      state.d1Characters = [];
+      state.d1ActiveCharId = '';
+      state.d1Activities = [];
+      // Clear cached definitions so they don't bleed into a new D1 account lookup
+      Object.keys(d1ActivityDefs).forEach(k => delete d1ActivityDefs[k]);
+      document.getElementById('d1Platform').value = '';
+      document.getElementById('d1DisplayName').value = '';
+      document.getElementById('d1Connected').style.display = 'none';
+      document.getElementById('d1CharSelect').style.display = 'none';
+      document.getElementById('d1PlayerList').style.display = 'none';
+      document.getElementById('d1StatusMsg').style.display = 'none';
+      document.getElementById('sumD1Stat').style.display = 'none';
+      if (state.activeCharId || state.d1ActiveCharId) loadAllHistory();
+    }
+
+    function clearD2() {
+      state.membershipId = '';
+      state.membershipType = '';
+      state.displayName = '';
+      state.displayNameCode = '';
+      state.characters = [];
+      state.activeCharId = '';
+      document.getElementById('searchInput').value = '';
+      document.getElementById('resultsList').style.display = 'none';
+      document.getElementById('d2Connected').style.display = 'none';
+      document.getElementById('d2CharSection').style.display = 'none';
+      document.getElementById('charTabs').innerHTML = '';
+      // Update header to reflect D1-only state, or hide profile if nothing left
+      if (state.d1ActiveCharId) {
+        updateProfileHeader();
+        loadAllHistory();
+      } else {
+        document.getElementById('profile-section').style.display = 'none';
+      }
+    }
+
+    // ── D1 Activity Fetch ────────────────────────────────────────────────────────
+
+    // Accumulated D1 activity definitions from API (populated by fetchAllD1Pages)
+    // Shape: { [hashString]: { activityName, activityDescription, activityTypeHashName, ... } }
+    const d1ActivityDefs = {};
+
+    async function fetchAllD1Pages(mode, label) {
+      const all = [];
+      let page = 0;
+      while (true) {
+        showStatus(`Scanning D1 ${label}... (page ${page + 1})`, 'info', true);
+        const data = await d1ApiFetch(
+          `/Destiny/Stats/ActivityHistory/${state.d1MembershipType}/${state.d1MembershipId}/${state.d1ActiveCharId}/` +
+          `?count=250&mode=${mode}&page=${page}&definitions=true`
+        );
+        if (data.ErrorCode !== 1) break;
+        const resp = data.Response?.data || data.Response || {};
+        const acts = resp.activities || [];
+
+        // Merge any activity definitions that came back in this page
+        // D1 API returns definitions under Response.definitions.activities (keyed by hash string)
+        const defs = data.Response?.definitions?.activities || {};
+        Object.assign(d1ActivityDefs, defs);
+
+        all.push(...acts);
+        if (acts.length < 250) break;
+        page++;
+      }
+      return all;
+    }
+
+    function resolveD1Name(act) {
+      const refId = String(act.activityDetails?.referenceId || '');
+      const dirHash = String(act.activityDetails?.directorActivityHash || '');
+
+      // 1. Try API-returned definitions first (most accurate)
+      const defByRef  = d1ActivityDefs[refId];
+      const defByDir  = d1ActivityDefs[dirHash];
+      const apiName   = defByRef?.activityName || defByDir?.activityName;
+      if (apiName && apiName !== 'Unknown' && apiName.trim() !== '') return apiName;
+
+      // 2. Fall back to our hardcoded D1 hash map
+      if (D1_RAID_NAMES[refId])  return D1_RAID_NAMES[refId];
+      if (D1_RAID_NAMES[dirHash]) return D1_RAID_NAMES[dirHash];
+
+      // 3. Last resort
+      return 'D1 Raid';
+    }
+
+    // Normalize D1 activity to a shape compatible with our renderer
+    function normalizeD1Activity(act) {
+      const vals = act.values || {};
+      return {
+        _isD1: true,
+        period: act.period,
+        activityDetails: {
+          instanceId: act.activityDetails?.instanceId || act.activityDetails?.referenceId + '_' + act.period,
+          referenceId: act.activityDetails?.referenceId,
+          directorActivityHash: act.activityDetails?.directorActivityHash,
+        },
+        _d1Name: resolveD1Name(act),
+        values: {
+          completed:               { basic: { value: vals.completed?.basic?.value ?? 0 } },
+          kills:                   { basic: { value: vals.kills?.basic?.value || 0 } },
+          deaths:                  { basic: { value: vals.deaths?.basic?.value || 0 } },
+          activityDurationSeconds: { basic: { value: vals.activityDurationSeconds?.basic?.value || 0 } },
+          playerCount:             { basic: { value: vals.playerCount?.basic?.value || 1 } },
+        },
+      };
     }
 
     function showStatus(msg, type = 'info', loading = false) {
@@ -1201,6 +1692,36 @@
 
     // ── Profile ─────────────────────────────────────────────────────────────────
 
+    function showProfileSection() {
+      document.getElementById('profile-section').style.display = 'block';
+      updateProfileHeader();
+    }
+
+    function updateProfileHeader() {
+      const hasD2 = !!state.activeCharId;
+      const hasD1 = !!state.d1ActiveCharId;
+      const d1Name = document.getElementById('d1ConnectedText').textContent.split(' · ')[0];
+
+      if (hasD2 && hasD1) {
+        document.getElementById('guardianName').textContent = state.displayName;
+        document.getElementById('guardianCode').textContent =
+          '#' + String(state.displayNameCode).padStart(4, '0') +
+          ' · ' + (PLATFORM_NAMES[state.membershipType] || '') +
+          '  +  D1: ' + d1Name;
+      } else if (hasD2) {
+        document.getElementById('guardianName').textContent = state.displayName;
+        document.getElementById('guardianCode').textContent =
+          '#' + String(state.displayNameCode).padStart(4, '0') + ' · ' + (PLATFORM_NAMES[state.membershipType] || '');
+      } else if (hasD1) {
+        document.getElementById('guardianName').textContent = d1Name;
+        document.getElementById('guardianCode').textContent =
+          'Destiny 1 · ' + (PLATFORM_NAMES[parseInt(state.d1MembershipType)] || '');
+      }
+
+      // Show/hide D2 character tabs
+      document.getElementById('d2CharSection').style.display = hasD2 ? 'block' : 'none';
+    }
+
     async function loadProfile(player) {
       showStatus('Loading guardian profile...', 'info', true);
       state.membershipId = player.membershipId;
@@ -1217,12 +1738,13 @@
 
         state.characters = Object.values(chars).sort((a, b) => new Date(b.dateLastPlayed) - new Date(a.dateLastPlayed));
 
-        document.getElementById('guardianName').textContent = state.displayName;
-        document.getElementById('guardianCode').textContent =
-          '#' + String(state.displayNameCode).padStart(4, '0') + ' · ' + (PLATFORM_NAMES[state.membershipType] || '');
-
         renderCharTabs();
-        document.getElementById('profile-section').style.display = 'block';
+        // Show D2 connected badge
+        document.getElementById('d2ConnectedText').textContent =
+          state.displayName + ' · ' + (PLATFORM_NAMES[state.membershipType] || '');
+        document.getElementById('d2Connected').style.display = 'flex';
+
+        showProfileSection();
         hideStatus();
 
         if (state.characters.length) selectChar(state.characters[0].characterId);
@@ -1252,6 +1774,7 @@
     function selectChar(charId) {
       state.activeCharId = charId;
       document.querySelectorAll('.char-tab').forEach(t => t.classList.toggle('active', t.dataset.charid === charId));
+      updateProfileHeader();
       loadAllHistory();
     }
 
@@ -1264,14 +1787,13 @@
         showStatus(`Scanning ${label}... (page ${page + 1})`, 'info', true);
         const data = await apiFetch(
           `/Destiny2/${state.membershipType}/Account/${state.membershipId}/Character/${state.activeCharId}/Stats/Activities/` +
-          `?count=100&mode=${mode}&page=${page}`
+          `?count=250&mode=${mode}&page=${page}`
         );
         if (data.ErrorCode !== 1) break;
         const acts = data.Response?.activities || [];
         all.push(...acts);
-        if (acts.length < 100) break;
+        if (acts.length < 250) break;
         page++;
-        if (page > 49) break; // safety cap at 5000 per mode
       }
       return all;
     }
@@ -1302,12 +1824,33 @@
       document.getElementById('activityCount').textContent = '';
 
       try {
-        // Fetch raids and dungeons sequentially (so progress messages make sense)
-        const raids = await fetchAllPages(4, 'raids');
-        const dungeons = await fetchAllPages(82, 'dungeons');
+        // ── Fetch D2 raids + dungeons (skip if no D2 character selected) ─────────
+        let d2all = [];
+        let d2RaidInstanceIds = new Set();
 
-        // Combine and sort oldest → newest
-        const all = [...raids, ...dungeons].sort((a, b) => new Date(a.period) - new Date(b.period));
+        if (state.activeCharId) {
+          const raids = await fetchAllPages(4, 'raids');
+          const dungeons = await fetchAllPages(82, 'dungeons');
+          d2all = [...raids, ...dungeons].sort((a, b) => new Date(a.period) - new Date(b.period));
+
+          // Resolve D2 names
+          const uniqueHashes = [...new Set(d2all.map(a => a.activityDetails.referenceId))];
+          await resolveNames(uniqueHashes);
+
+          d2RaidInstanceIds = new Set(raids.map(r => r.activityDetails.instanceId));
+          d2all.forEach(act => { act._isD1 = false; });
+        }
+
+        // ── Fetch D1 raids (mode 4) if linked ───────────────────────────────────
+        let d1all = [];
+        if (state.d1ActiveCharId) {
+          const d1Raids = await fetchAllD1Pages(4, 'raids');
+          d1all = d1Raids.map(normalizeD1Activity);
+          state.d1Activities = d1all;
+        }
+
+        // ── Combine & sort ───────────────────────────────────────────────────────
+        const all = [...d2all, ...d1all].sort((a, b) => new Date(a.period) - new Date(b.period));
 
         if (!all.length) {
           hideStatus();
@@ -1316,32 +1859,40 @@
           return;
         }
 
-        // Resolve unique activity names
-        const uniqueHashes = [...new Set(all.map(a => a.activityDetails.referenceId))];
-        await resolveNames(uniqueHashes);
-
-        // Store raw data for download / debugging
-        state.rawActivities = all;
-        state.rawNameCache = { ...nameCache };
-
-        // Determine first clears: walk chronologically, mark first completed run per activity name.
-        // We use the resolved name rather than directorActivityHash because Bungie sometimes
-        // creates new activity definitions for the same raid (e.g. after patches), resulting
-        // in different hashes that resolve to the same name.
+        // ── First clears — D1 and D2 tracked separately ──────────────────────────
+        // Key: "{game}:{name}" so a D1 King's Fall first clear doesn't prevent a D2 one
         const firstClearInstances = new Set();
         const seenCleared = new Set();
 
         all.forEach(act => {
-          const name = nameCache[act.activityDetails.referenceId] || ('hash:' + act.activityDetails.directorActivityHash);
+          const isD1 = act._isD1;
+          const name = isD1
+            ? act._d1Name
+            : (nameCache[act.activityDetails.referenceId] || ('hash:' + act.activityDetails.directorActivityHash));
+          const gamePrefix = isD1 ? 'D1' : 'D2';
+          const key = `${gamePrefix}:${name}`;
           const completed = (act.values?.completed?.basic?.value ?? 0) === 1;
-          if (completed && !seenCleared.has(name)) {
+          if (completed && !seenCleared.has(key)) {
             firstClearInstances.add(act.activityDetails.instanceId);
-            seenCleared.add(name);
+            seenCleared.add(key);
           }
         });
 
-        // Build raid set for type-badge
-        const raidInstanceIds = new Set(raids.map(r => r.activityDetails.instanceId));
+        // Store raw data
+        state.rawActivities = all;
+        state.rawNameCache = { ...nameCache };
+
+        // Build raid set: D2 raids + all D1 activities (D1 had no dungeons)
+        const raidInstanceIds = new Set([
+          ...d2RaidInstanceIds,
+          ...d1all.map(a => a.activityDetails.instanceId),
+        ]);
+
+        // Show D1 clears stat only when both games are loaded (otherwise it's redundant)
+        const bothGames = state.activeCharId && state.d1ActiveCharId;
+        document.getElementById('sumD1Stat').style.display = bothGames ? '' : 'none';
+        // Also update profile header whenever history reloads (char selection may have changed)
+        updateProfileHeader();
 
         hideStatus();
         renderActivities(all, firstClearInstances, raidInstanceIds);
@@ -1373,8 +1924,6 @@
       if (state.renderedActivities) renderActivities(state.renderedActivities, state.renderedFirstClears, state.renderedRaidIds);
     }
 
-    // ── Fireteam expand ───────────────────────────────────────────────────────────
-
     // Cache fetched fireteam data: instanceId → array of player entries
     const fireteamCache = {};
 
@@ -1402,6 +1951,47 @@
         renderFireteam(panel, entries);
       } catch (e) {
         panel.innerHTML = `<div class="fireteam-error">Failed to load fireteam: ${e.message}</div>`;
+        fireteamCache[instanceId] = [];
+      }
+    }
+
+    async function toggleD1Activity(item, instanceId) {
+      const isExpanded = item.classList.contains('expanded');
+      document.querySelectorAll('.activity-item.expanded').forEach(el => el.classList.remove('expanded'));
+      if (isExpanded) return;
+
+      item.classList.add('expanded');
+      const panel = item.querySelector('.fireteam-panel');
+
+      if (fireteamCache[instanceId] !== undefined) {
+        renderFireteam(panel, fireteamCache[instanceId]);
+        return;
+      }
+
+      panel.innerHTML = '<div class="fireteam-loading"><div class="spinner"></div>Loading fireteam...</div>';
+
+      try {
+        const data = await d1ApiFetch(`/Destiny/Stats/PostGameCarnageReport/${instanceId}/`);
+        if (data.ErrorCode !== 1) throw new Error(data.Message || 'API error');
+        // D1 PGCR shape: data.Response.data.entries
+        const entries = data.Response?.data?.entries || data.Response?.entries || [];
+        // Normalize D1 entries to match D2 shape for renderFireteam
+        const normalized = entries.map(e => ({
+          player: {
+            destinyUserInfo: {
+              membershipId: e.player?.destinyUserInfo?.membershipId,
+              displayName: e.player?.destinyUserInfo?.displayName,
+              bungieGlobalDisplayName: e.player?.destinyUserInfo?.displayName,
+              bungieGlobalDisplayNameCode: null,
+            }
+          },
+          score: e.score,
+          values: e.values,
+        }));
+        fireteamCache[instanceId] = normalized;
+        renderFireteam(panel, normalized);
+      } catch (e) {
+        panel.innerHTML = `<div class="fireteam-error">Fireteam data unavailable for D1 activity.</div>`;
         fireteamCache[instanceId] = [];
       }
     }
@@ -1502,11 +2092,10 @@
       state.renderedFirstClears = firstClearInstances;
       state.renderedRaidIds     = raidInstanceIds;
 
-      // Apply solo filter
+      // Apply filters
       let filtered = activities;
       if (hideSolo) {
         filtered = filtered.filter(act => {
-          // Only filter solo on raids — dungeons are designed to be completed solo
           const isRaid = raidInstanceIds.has(act.activityDetails.instanceId);
           if (!isRaid) return true;
           const playerCount = act.values && act.values.playerCount
@@ -1523,12 +2112,16 @@
         filtered = filtered.filter(act => raidInstanceIds.has(act.activityDetails.instanceId));
       } else if (activityTypeFilter === 'dungeons') {
         filtered = filtered.filter(act => !raidInstanceIds.has(act.activityDetails.instanceId));
+      } else if (activityTypeFilter === 'd1') {
+        filtered = filtered.filter(act => act._isD1);
+      } else if (activityTypeFilter === 'd2') {
+        filtered = filtered.filter(act => !act._isD1);
       }
 
       const list = document.getElementById('activityList');
       list.innerHTML = '';
 
-      let totalClears = 0, totalFirstClears = 0, raidClears = 0, dungeonClears = 0;
+      let totalClears = 0, totalFirstClears = 0, raidClears = 0, dungeonClears = 0, d1Clears = 0;
 
       filtered.forEach((act, i) => {
         const v = act.values || {};
@@ -1536,11 +2129,20 @@
         const refHash = details.referenceId;
         const instId = details.instanceId;
         const isRaid = raidInstanceIds.has(instId);
-        const name = nameCache[refHash] || 'Unknown Activity';
+        const isD1 = !!act._isD1;
+
+        // Resolve name: D1 activities use pre-resolved _d1Name
+        const rawName = isD1
+          ? act._d1Name
+          : (nameCache[refHash] || 'Unknown Activity');
+
+        // For reprised raids, append game marker to disambiguate in the title
+        const isReprised = D1_REPRISED_IN_D2.has(rawName);
+        const name = isReprised ? `${rawName} (${isD1 ? 'D1' : 'D2'})` : rawName;
 
         const completed = (v.completed?.basic?.value ?? 0) === 1;
         const isFirstClr = firstClearInstances.has(instId);
-        const playerCount = act.values && act.values.playerCount ? act.values.playerCount.basic.value : 1;
+        const playerCount = v.playerCount ? v.playerCount.basic.value : 1;
         const isSoloDungeon = !isRaid && playerCount === 1 && completed;
         const duration = formatDuration(v.activityDurationSeconds?.basic?.value || 0);
 
@@ -1552,10 +2154,10 @@
         const deaths = Math.round(v.deaths?.basic?.value || 0);
         const kd = deaths > 0 ? (kills / deaths).toFixed(2) : kills > 0 ? '∞' : '—';
 
-        // Tally stats
         if (completed) {
           totalClears++;
-          if (isRaid) raidClears++; else dungeonClears++;
+          if (isD1) d1Clears++;
+          else if (isRaid) raidClears++; else dungeonClears++;
         }
         if (isFirstClr) totalFirstClears++;
 
@@ -1572,11 +2174,16 @@
         item.className = itemClass;
         item.style.animationDelay = Math.min(i * 0.015, 0.5) + 's';
 
+        // Type badge: D1 activities are always raids; D2 can be raid or dungeon
+        const typeBadgeClass = isRaid ? 'raid' : 'dungeon';
+        const typeBadgeLabel = isD1 ? 'D1 Raid' : (isRaid ? 'Raid' : 'Dungeon');
+
         item.innerHTML = `
       <div class="act-main">
         <div class="act-name-row">
           <div class="act-name">${name}</div>
-          <div class="act-type-badge ${isRaid ? 'raid' : 'dungeon'}">${isRaid ? 'Raid' : 'Dungeon'}</div>
+          <div class="act-type-badge ${typeBadgeClass}">${typeBadgeLabel}</div>
+          <div class="game-badge ${isD1 ? 'd1' : 'd2'}">${isD1 ? 'D1' : 'D2'}</div>
           ${isFirstClr ? '<div class="first-clear-badge">First Clear</div>' : ''}
           ${isSoloDungeon ? '<div class="solo-badge">Solo</div>' : ''}
         </div>
@@ -1604,22 +2211,42 @@
       <div class="fireteam-panel"></div>
     `;
 
-        item.onclick = () => toggleActivity(item, instId);
+        // D1 activities: fireteam expand uses D1 PGCR endpoint
+        if (isD1) {
+          item.onclick = () => toggleD1Activity(item, instId);
+        } else {
+          item.onclick = () => toggleActivity(item, instId);
+        }
         list.appendChild(item);
       });
 
-      // Update section title count
       document.getElementById('activityCount').textContent = `${filtered.length} runs`;
-
-      // Update summary bar
       document.getElementById('sumTotal').textContent = filtered.length;
       document.getElementById('sumClears').textContent = totalClears;
       document.getElementById('sumFirstClears').textContent = totalFirstClears;
       document.getElementById('sumRaids').textContent = raidClears;
       document.getElementById('sumDungeons').textContent = dungeonClears;
+      document.getElementById('sumD1').textContent = d1Clears;
       document.getElementById('summaryBar').style.display = 'flex';
       document.getElementById('filterBar').style.display = 'flex';
+
+      // Show/hide filter options based on what games are loaded
+      const d1Only = state.d1ActiveCharId && !state.activeCharId;
+      const d2Only = state.activeCharId && !state.d1ActiveCharId;
+      const sel = document.getElementById('activityTypeSelect');
+      sel.querySelector('option[value="dungeons"]').style.display = d1Only ? 'none' : '';
+      sel.querySelector('option[value="d1"]').style.display    = d2Only ? 'none' : '';
+      sel.querySelector('option[value="d2"]').style.display    = d1Only ? 'none' : '';
+      sel.querySelector('option[value="both"]').textContent    = d1Only ? 'All Raids' : 'Both';
+      // Reset to 'both' if current filter is now invalid
+      if ((d1Only && (activityTypeFilter === 'dungeons' || activityTypeFilter === 'd2')) ||
+          (d2Only && activityTypeFilter === 'd1')) {
+        activityTypeFilter = 'both';
+        sel.value = 'both';
+      }
     }
+
+    // ── Fireteam expand ───────────────────────────────────────────────────────────
 
     function formatDuration(seconds) {
       const m = Math.floor(seconds / 60);

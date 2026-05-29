@@ -1278,9 +1278,10 @@
       }).then(r => r.json());
     }
 
-    // D1 uses a different base path
+    // D1 uses the same /Platform base as D2 — paths are /Destiny/... not /Destiny2/...
+    // The proxy already points to https://www.bungie.net/Platform so no prefix needed.
     function d1ApiFetch(path) {
-      return fetch(`${PROXY}?path=${encodeURIComponent('/D1/Platform' + path)}`).then(r => r.json());
+      return apiFetch(path);
     }
 
     // ── D1 Setup ─────────────────────────────────────────────────────────────────

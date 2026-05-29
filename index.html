@@ -1456,14 +1456,13 @@
         showStatus(`Scanning D1 ${label}... (page ${page + 1})`, 'info', true);
         const data = await d1ApiFetch(
           `/Destiny/Stats/ActivityHistory/${state.d1MembershipType}/${state.d1MembershipId}/${state.d1ActiveCharId}/` +
-          `?count=100&mode=${mode}&page=${page}&definitions=false`
+          `?count=250&mode=${mode}&page=${page}&definitions=false`
         );
         if (data.ErrorCode !== 1) break;
         const acts = data.Response?.data?.activities || [];
         all.push(...acts);
-        if (acts.length < 100) break;
+        if (acts.length < 250) break;
         page++;
-        if (page > 49) break;
       }
       return all;
     }
@@ -1693,14 +1692,13 @@
         showStatus(`Scanning ${label}... (page ${page + 1})`, 'info', true);
         const data = await apiFetch(
           `/Destiny2/${state.membershipType}/Account/${state.membershipId}/Character/${state.activeCharId}/Stats/Activities/` +
-          `?count=100&mode=${mode}&page=${page}`
+          `?count=250&mode=${mode}&page=${page}`
         );
         if (data.ErrorCode !== 1) break;
         const acts = data.Response?.activities || [];
         all.push(...acts);
-        if (acts.length < 100) break;
+        if (acts.length < 250) break;
         page++;
-        if (page > 49) break; // safety cap at 5000 per mode
       }
       return all;
     }

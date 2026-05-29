@@ -620,6 +620,26 @@
       font-size: 7px;
     }
 
+    .solo-flawless-badge {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #f0c060;
+      border: 1px solid rgba(240, 192, 96, 0.5);
+      background: rgba(240, 192, 96, 0.08);
+      padding: 2px 7px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .solo-flawless-badge::before {
+      content: '✦';
+      font-size: 7px;
+    }
+
     .act-type-badge {
       font-size: 9px;
       letter-spacing: 0.15em;
@@ -2369,7 +2389,9 @@
         const completed = isActualClear(v);
         const isFirstClr = firstClearInstances.has(instId);
         const playerCount = v.playerCount ? v.playerCount.basic.value : 1;
+        const deaths = Math.round(v.deaths?.basic?.value || 0);
         const isSoloDungeon = !isRaid && playerCount === 1 && completed;
+        const isSoloFlawless = isSoloDungeon && deaths === 0;
         const duration = formatDuration(v.activityDurationSeconds?.basic?.value || 0);
 
         const period = new Date(act.period);
@@ -2377,7 +2399,7 @@
         const timeStr = period.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 
         const kills = Math.round(v.kills?.basic?.value || 0);
-        const deaths = Math.round(v.deaths?.basic?.value || 0);
+        // deaths already computed above for solo flawless check
         const kd = deaths > 0 ? (kills / deaths).toFixed(2) : kills > 0 ? '∞' : '—';
 
         if (completed) {
@@ -2421,7 +2443,7 @@
           <div class="game-badge ${isD1 ? 'd1' : 'd2'}">${isD1 ? 'D1' : 'D2'}</div>
           ${classBadgeHtml}
           ${isFirstClr ? '<div class="first-clear-badge">First Clear</div>' : ''}
-          ${isSoloDungeon ? '<div class="solo-badge">Solo</div>' : ''}
+          ${isSoloFlawless ? '<div class="solo-flawless-badge">Solo Flawless</div>' : isSoloDungeon ? '<div class="solo-badge">Solo</div>' : ''}
         </div>
         <div class="act-meta">
           <span>${dateStr} · ${timeStr}</span>

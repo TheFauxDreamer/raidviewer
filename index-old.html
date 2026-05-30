@@ -1063,6 +1063,18 @@
       background: rgba(75, 143, 200, 0.06);
     }
 
+    .platform-badge {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #a0b4cc;
+      border: 1px solid rgba(160, 180, 204, 0.35);
+      background: rgba(160, 180, 204, 0.07);
+      padding: 2px 7px;
+      white-space: nowrap;
+    }
+
     /* ── D1 Setup Panel ── */
     .d1-setup {
       background: var(--surface);
@@ -1449,7 +1461,7 @@
           <div class="toggle-track" id="soloToggleTrack">
             <div class="toggle-thumb"></div>
           </div>
-          Hide solo runs
+          Hide solo raid runs
         </label>
         <label class="filter-toggle" onclick="toggleFailedFilter()">
           <div class="toggle-track" id="failedToggleTrack">
@@ -1537,12 +1549,14 @@
     let state = {
       membershipId: '', membershipType: '',
       displayName: '', displayNameCode: '', characters: [], activeCharId: '',
-      loadAllD2: false,   // true = fetch all D2 characters
+      loadAllD2: false,         // true = fetch all D2 characters
+      allPlatformMemberships: [], // all cross-save memberships for this player
+      loadAllPlatforms: false,  // true = fetch history from every cross-save platform
       // D1 state
       d1MembershipId: '', d1MembershipType: '',
       d1Characters: [], d1ActiveCharId: '', d1CharacterName: '',
       d1Activities: [],
-      loadAllD1: false,   // true = fetch all D1 characters
+      loadAllD1: false,         // true = fetch all D1 characters
     };
     // Map charId -> class name (populated for both D1 and D2)
     const charClassMap = {};
@@ -2021,16 +2035,20 @@
       const hasD1 = !!state.d1ActiveCharId;
       const d1Name = document.getElementById('d1ConnectedText').textContent.split(' · ')[0];
 
+      const platformLabel = state.loadAllPlatforms && state.allPlatformMemberships.length > 1
+        ? state.allPlatformMemberships.map(m => PLATFORM_NAMES[m.membershipType] || '').filter(Boolean).join(' · ')
+        : (PLATFORM_NAMES[state.membershipType] || '');
+
       if (hasD2 && hasD1) {
         document.getElementById('guardianName').textContent = state.displayName;
         document.getElementById('guardianCode').textContent =
           '#' + String(state.displayNameCode).padStart(4, '0') +
-          ' · ' + (PLATFORM_NAMES[state.membershipType] || '') +
+          ' · ' + platformLabel +
           '  +  D1: ' + d1Name;
       } else if (hasD2) {
         document.getElementById('guardianName').textContent = state.displayName;
         document.getElementById('guardianCode').textContent =
-          '#' + String(state.displayNameCode).padStart(4, '0') + ' · ' + (PLATFORM_NAMES[state.membershipType] || '');
+          '#' + String(state.displayNameCode).padStart(4, '0') + ' · ' + platformLabel;
       } else if (hasD1) {
         document.getElementById('guardianName').textContent = d1Name;
         document.getElementById('guardianCode').textContent =
@@ -2047,6 +2065,10 @@
       state.membershipType = player.membershipType;
       state.displayName = player.bungieGlobalDisplayName || player.displayName;
       state.displayNameCode = player.bungieGlobalDisplayNameCode;
+      // Store all cross-save memberships (exclude BungieNet=254 which has no Destiny data)
+      state.allPlatformMemberships = (player.allMemberships || [player])
+        .filter(m => m.membershipType !== 254 && m.membershipId);
+      state.loadAllPlatforms = false;
 
       try {
         const data = await apiFetch(`/Destiny2/${state.membershipType}/Profile/${state.membershipId}/?components=100,200`);
@@ -2104,14 +2126,31 @@
         allBtn.onclick = () => toggleLoadAllD2();
         tabs.appendChild(allBtn);
       }
+
+      // "All Platforms" button — only shown when player has multiple cross-save memberships
+      if (state.allPlatformMemberships.length > 1) {
+        const platformNames = state.allPlatformMemberships
+          .map(m => PLATFORM_NAMES[m.membershipType] || ('Platform ' + m.membershipType))
+          .join(' · ');
+        const platBtn = document.createElement('div');
+        platBtn.className = 'char-tab-all' + (state.loadAllPlatforms ? ' active' : '');
+        platBtn.id = 'loadAllPlatformsBtn';
+        platBtn.title = platformNames;
+        platBtn.innerHTML = `<span>⊕</span> All Platforms`;
+        platBtn.onclick = () => toggleLoadAllPlatforms();
+        tabs.appendChild(platBtn);
+      }
     }
 
     function selectChar(charId) {
       state.loadAllD2 = false;
+      state.loadAllPlatforms = false;
       state.activeCharId = charId;
       document.querySelectorAll('.char-tab').forEach(t => t.classList.toggle('active', t.dataset.charid === charId));
       const allBtn = document.getElementById('loadAllD2Btn');
       if (allBtn) allBtn.classList.remove('active');
+      const platBtn = document.getElementById('loadAllPlatformsBtn');
+      if (platBtn) platBtn.classList.remove('active');
       updateProfileHeader();
       loadAllHistory();
     }
@@ -2119,14 +2158,36 @@
     function toggleLoadAllD2() {
       state.loadAllD2 = !state.loadAllD2;
       if (state.loadAllD2) {
-        // Deselect individual char tabs
+        // Deselect individual char tabs and platform toggle
+        state.loadAllPlatforms = false;
         document.querySelectorAll('.char-tab').forEach(t => t.classList.remove('active'));
         const allBtn = document.getElementById('loadAllD2Btn');
         if (allBtn) allBtn.classList.add('active');
+        const platBtn = document.getElementById('loadAllPlatformsBtn');
+        if (platBtn) platBtn.classList.remove('active');
       } else {
         // Fall back to first character
         const allBtn = document.getElementById('loadAllD2Btn');
         if (allBtn) allBtn.classList.remove('active');
+        if (state.characters.length) selectChar(state.characters[0].characterId);
+        return;
+      }
+      loadAllHistory();
+    }
+
+    function toggleLoadAllPlatforms() {
+      state.loadAllPlatforms = !state.loadAllPlatforms;
+      const platBtn = document.getElementById('loadAllPlatformsBtn');
+      if (platBtn) platBtn.classList.toggle('active', state.loadAllPlatforms);
+      if (state.loadAllPlatforms) {
+        // Deselect individual char tabs and the All Characters toggle
+        state.loadAllD2 = false;
+        state.activeCharId = '';
+        document.querySelectorAll('.char-tab').forEach(t => t.classList.remove('active'));
+        const allBtn = document.getElementById('loadAllD2Btn');
+        if (allBtn) allBtn.classList.remove('active');
+      } else {
+        // Fall back to first character on primary platform
         if (state.characters.length) selectChar(state.characters[0].characterId);
         return;
       }
@@ -2152,19 +2213,22 @@
 
     // ── Fetch all raids + dungeons ───────────────────────────────────────────────
 
-    async function fetchAllPages(mode, label, charId) {
+    async function fetchAllPages(mode, label, charId, membershipType, membershipId) {
+      // membershipType/membershipId default to the primary account in state
+      const mType = membershipType || state.membershipType;
+      const mId   = membershipId   || state.membershipId;
       const all = [];
       let page = 0;
       while (true) {
         showStatus(`Scanning ${label} (${charClassMap[charId] || 'character'})... page ${page + 1}`, 'info', true);
         const data = await apiFetch(
-          `/Destiny2/${state.membershipType}/Account/${state.membershipId}/Character/${charId}/Stats/Activities/` +
+          `/Destiny2/${mType}/Account/${mId}/Character/${charId}/Stats/Activities/` +
           `?count=250&mode=${mode}&page=${page}`
         );
         if (data.ErrorCode !== 1) break;
         const acts = data.Response?.activities || [];
-        // Tag each activity with the character it was fetched for
-        acts.forEach(a => { a._characterId = charId; });
+        // Tag each activity with the character and platform it came from
+        acts.forEach(a => { a._characterId = charId; a._membershipType = mType; });
         all.push(...acts);
         if (acts.length < 250) break;
         page++;
@@ -2202,14 +2266,44 @@
         let d2all = [];
         let d2RaidInstanceIds = new Set();
 
-        const d2CharIds = state.loadAllD2
-          ? state.characters.map(c => c.characterId)
-          : (state.activeCharId ? [state.activeCharId] : []);
+        // When loadAllPlatforms is on we fetch every cross-save membership; otherwise just primary.
+        // Each membership may have its own set of characters — we collect them all.
+        const membershipsToFetch = state.loadAllPlatforms && state.allPlatformMemberships.length > 1
+          ? state.allPlatformMemberships
+          : [{ membershipId: state.membershipId, membershipType: state.membershipType }];
 
-        if (d2CharIds.length) {
-          const charCount = d2CharIds.length;
-          const charLabel = charCount > 1 ? `all ${charCount} D2 characters` : (charClassMap[d2CharIds[0]] || 'character');
-          showStatus(`Loading ${charLabel}...`, 'info', true);
+        // Build list of (charId, membershipType, membershipId) tuples to fetch from.
+        // When loadAllPlatforms is on we pull characters from every platform; otherwise
+        // we only use state.characters (already loaded for primary) and filter by selection.
+        let charFetchList = []; // { charId, membershipType, membershipId }
+        if (state.loadAllPlatforms) {
+          for (const m of membershipsToFetch) {
+            showStatus(`Loading characters from ${PLATFORM_NAMES[m.membershipType] || 'platform'}...`, 'info', true);
+            try {
+              const pData = await apiFetch(`/Destiny2/${m.membershipType}/Profile/${m.membershipId}/?components=200`);
+              if (pData.ErrorCode === 1) {
+                const chars = Object.values(pData.Response?.characters?.data || {});
+                chars.forEach(c => {
+                  charClassMap[c.characterId] = CLASS_NAMES[c.classType] || 'Unknown';
+                  charFetchList.push({ charId: c.characterId, membershipType: m.membershipType, membershipId: m.membershipId });
+                });
+              }
+            } catch (e) { /* skip platform on error */ }
+          }
+        } else {
+          const d2CharIds = state.loadAllD2
+            ? state.characters.map(c => c.characterId)
+            : (state.activeCharId ? [state.activeCharId] : []);
+          charFetchList = d2CharIds.map(cid => ({
+            charId: cid,
+            membershipType: state.membershipType,
+            membershipId: state.membershipId,
+          }));
+        }
+
+        if (charFetchList.length) {
+          const charCount = charFetchList.length;
+          showStatus(`Loading ${charCount} character${charCount > 1 ? 's' : ''}...`, 'info', true);
 
           // Fetch all characters, deduplicate by instanceId (shared activities appear on multiple chars).
           // We fetch three modes:
@@ -2219,12 +2313,13 @@
           //                       the Dungeon mode category existed; those 2018 runs only appear here
           // Pit of Heresy mode-4 entries are reclassified via LEGACY_DUNGEON_HASHES.
           // Shattered Throne mode-2 entries are identified via SHATTERED_THRONE_HASHES.
+          // instanceId is globally unique across platforms, so the seen-set handles cross-platform dedup.
           const seen = new Set();
           const allRaids = [], allDungeons = [];
-          for (const cid of d2CharIds) {
-            const raids    = await fetchAllPages(4,  'raids',    cid);
-            const dungeons = await fetchAllPages(82, 'dungeons', cid);
-            const stories  = await fetchAllPages(2,  'story',    cid);
+          for (const { charId, membershipType, membershipId } of charFetchList) {
+            const raids    = await fetchAllPages(4,  'raids',    charId, membershipType, membershipId);
+            const dungeons = await fetchAllPages(82, 'dungeons', charId, membershipType, membershipId);
+            const stories  = await fetchAllPages(2,  'story',    charId, membershipType, membershipId);
             raids.forEach(a => {
               if (seen.has(a.activityDetails.instanceId)) return;
               seen.add(a.activityDetails.instanceId);
@@ -2727,6 +2822,9 @@
 
       let totalClears = 0, totalFirstClears = 0, raidClears = 0, dungeonClears = 0, d1Clears = 0;
 
+      // Compute once whether multiple platforms are represented in the filtered set
+      const platformsInView = new Set(filtered.map(a => a._membershipType).filter(Boolean));
+
       filtered.forEach((act, i) => {
         const v = act.values || {};
         const details = act.activityDetails || {};
@@ -2794,6 +2892,13 @@
           ? `<div class="class-badge ${actClass.toLowerCase()}"><span class="class-badge-icon" data-class="${actClass.toLowerCase()}"></span>${actClass}</div>`
           : '';
 
+        // Platform badge — only shown when activities span multiple platforms
+        const showPlatformBadge = !isD1 && state.loadAllPlatforms && platformsInView.size > 1;
+        const platformName = PLATFORM_NAMES[act._membershipType] || '';
+        const platformBadgeHtml = (showPlatformBadge && platformName)
+          ? `<div class="platform-badge">${platformName}</div>`
+          : '';
+
         item.innerHTML = `
       <div class="act-main">
         <div class="act-name-row">
@@ -2801,6 +2906,7 @@
           <div class="act-type-badge ${typeBadgeClass}">${typeBadgeLabel}</div>
           <div class="game-badge ${isD1 ? 'd1' : 'd2'}">${isD1 ? 'D1' : 'D2'}</div>
           ${classBadgeHtml}
+          ${platformBadgeHtml}
           ${isFirstClr ? '<div class="first-clear-badge">First Clear</div>' : ''}
           ${isSoloFlawless ? '<div class="solo-flawless-badge">Solo Flawless</div>' : isSoloDungeon ? '<div class="solo-badge">Solo</div>' : ''}
           ${isCheckpoint ? '<div class="checkpoint-badge">Checkpoint</div>' : ''}

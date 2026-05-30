@@ -640,6 +640,26 @@
       font-size: 7px;
     }
 
+    .checkpoint-badge {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid rgba(90, 112, 144, 0.5);
+      background: rgba(90, 112, 144, 0.08);
+      padding: 2px 7px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .checkpoint-badge::before {
+      content: '◈';
+      font-size: 7px;
+    }
+
     .act-type-badge {
       font-size: 9px;
       letter-spacing: 0.15em;
@@ -1437,6 +1457,12 @@
           </div>
           Hide failed runs
         </label>
+        <label class="filter-toggle" onclick="toggleCheckpointFilter()">
+          <div class="toggle-track" id="checkpointToggleTrack">
+            <div class="toggle-thumb"></div>
+          </div>
+          Full runs only
+        </label>
         <div style="display:flex; align-items:center; gap:8px; margin-left:auto;">
           <select id="activityTypeSelect" onchange="setActivityTypeFilter(this.value)" style="background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;padding:4px 8px;cursor:pointer;outline:none;">
             <option value="both">Both</option>
@@ -1841,6 +1867,8 @@
           directorActivityHash: act.activityDetails?.directorActivityHash,
         },
         _d1Name: resolveD1Name(act),
+        // D1 API does not reliably expose startingPhaseIndex — treat all D1 runs as full runs
+        _isCheckpoint: false,
         values: {
           completed:               { basic: { value: vals.completed?.basic?.value ?? 0 } },
           completionReason:        { basic: { value: vals.completionReason?.basic?.value ?? 0 } },
@@ -2224,7 +2252,12 @@
             });
           }
 
-          d2all = [...allRaids, ...allDungeons].sort((a, b) => new Date(a.period) - new Date(b.period));
+          // Tag each D2 activity: startingPhaseIndex > 0 means the player joined mid-run (checkpoint).
+          // Phase 0 = fresh start from the very first encounter.
+          d2all = [...allRaids, ...allDungeons].map(a => {
+            a._isCheckpoint = (a.activityDetails?.startingPhaseIndex ?? 0) > 0;
+            return a;
+          }).sort((a, b) => new Date(a.period) - new Date(b.period));
 
           // Resolve D2 names
           const uniqueHashes = [...new Set(d2all.map(a => a.activityDetails.referenceId))];
@@ -2317,6 +2350,7 @@
 
     let hideSolo = false;
     let hideFailed = false;
+    let hideCheckpoint = false;
     let activityTypeFilter = 'both';
 
     function toggleSoloFilter() {
@@ -2328,6 +2362,12 @@
     function toggleFailedFilter() {
       hideFailed = !hideFailed;
       document.getElementById('failedToggleTrack').classList.toggle('on', hideFailed);
+      if (state.renderedActivities) renderActivities(state.renderedActivities, state.renderedFirstClears, state.renderedRaidIds);
+    }
+
+    function toggleCheckpointFilter() {
+      hideCheckpoint = !hideCheckpoint;
+      document.getElementById('checkpointToggleTrack').classList.toggle('on', hideCheckpoint);
       if (state.renderedActivities) renderActivities(state.renderedActivities, state.renderedFirstClears, state.renderedRaidIds);
     }
 
@@ -2555,6 +2595,8 @@
 
       activities.forEach(act => {
         if (!isActualClear(act.values)) return;
+        // Checkpoint clears are tracked separately — the counter shows full-run clears only
+        if (act._isCheckpoint) return;
         const isD1   = !!act._isD1;
         const isRaid = raidInstanceIds.has(act.activityDetails.instanceId);
         const rawName = isD1
@@ -2667,6 +2709,9 @@
       if (hideFailed) {
         filtered = filtered.filter(act => isActualClear(act.values));
       }
+      if (hideCheckpoint) {
+        filtered = filtered.filter(act => !act._isCheckpoint);
+      }
       if (activityTypeFilter === 'raids') {
         filtered = filtered.filter(act => raidInstanceIds.has(act.activityDetails.instanceId));
       } else if (activityTypeFilter === 'dungeons') {
@@ -2700,6 +2745,7 @@
         const name = isReprised ? `${rawName} (${isD1 ? 'D1' : 'D2'})` : rawName;
 
         const completed = isActualClear(v);
+        const isCheckpoint = !!act._isCheckpoint;
         const isFirstClr = firstClearInstances.has(instId);
         const playerCount = v.playerCount ? v.playerCount.basic.value : 1;
         const deaths = Math.round(v.deaths?.basic?.value || 0);
@@ -2757,6 +2803,7 @@
           ${classBadgeHtml}
           ${isFirstClr ? '<div class="first-clear-badge">First Clear</div>' : ''}
           ${isSoloFlawless ? '<div class="solo-flawless-badge">Solo Flawless</div>' : isSoloDungeon ? '<div class="solo-badge">Solo</div>' : ''}
+          ${isCheckpoint ? '<div class="checkpoint-badge">Checkpoint</div>' : ''}
         </div>
         <div class="act-meta">
           <span>${dateStr} · ${timeStr}</span>

@@ -1273,6 +1273,8 @@
       text-align: right;
     }
     .counter-num.zero { color: var(--muted); font-weight: 400; }
+    .counter-row.uncleared .counter-name { color: var(--muted); }
+    .counter-row.uncleared { opacity: 0.55; }
 
   </style>
 </head>
@@ -2504,27 +2506,63 @@
       document.getElementById('counterPanel').classList.toggle('open', counterOpen);
     }
 
+    // Master lists of every raid/dungeon — used to show zero-clear entries in the counter panel.
+    // D1 raids (release order)
+    const D1_RAID_ROSTER = [
+      "Vault of Glass (D1)",
+      "Crota's End",
+      "King's Fall (D1)",
+      "Wrath of the Machine",
+    ];
+    // D2 raids (release order)
+    const D2_RAID_ROSTER = [
+      "Leviathan",
+      "Eater of Worlds",
+      "Spire of Stars",
+      "Last Wish",
+      "Scourge of the Past",
+      "Crown of Sorrow",
+      "Garden of Salvation",
+      "Deep Stone Crypt",
+      "Vault of Glass (D2)",
+      "Vow of the Disciple",
+      "King's Fall (D2)",
+      "Root of Nightmares",
+      "Crota's End (D2)",
+      "Salvation's Edge",
+    ];
+    // D2 dungeons (release order)
+    const D2_DUNGEON_ROSTER = [
+      "The Shattered Throne",
+      "Pit of Heresy",
+      "Prophecy",
+      "Grasp of Avarice",
+      "Duality",
+      "Spire of the Watcher",
+      "Ghosts of the Deep",
+      "Warlord's Ruin",
+      "Ghost of the Deep",
+      "Vesper's Host",
+      "Heresy",
+    ];
+
     function renderCounterPanel(activities, raidInstanceIds) {
       const panel = document.getElementById('counterPanel');
       const body  = document.getElementById('counterBody');
 
-      // Tally clears per activity name, split by game+type
-      // Structure: { d1Raids: {name: count}, d2Raids: {name: count}, d2Dungeons: {name: count} }
+      // Tally clears per canonical name, split by game+type
       const tally = { d1Raids: {}, d2Raids: {}, d2Dungeons: {} };
 
       activities.forEach(act => {
         if (!isActualClear(act.values)) return;
         const isD1   = !!act._isD1;
         const isRaid = raidInstanceIds.has(act.activityDetails.instanceId);
-        const isReprised = !isD1 && D1_REPRISED_IN_D2.has(
-          nameCache[act.activityDetails.referenceId] || ''
-        );
         const rawName = isD1
           ? act._d1Name
           : (nameCache[act.activityDetails.referenceId] || 'Unknown Activity');
-        const name = (isReprised || (isD1 && D1_REPRISED_IN_D2.has(rawName)))
-          ? `${rawName} (${isD1 ? 'D1' : 'D2'})`
-          : rawName;
+        // Append game tag for reprised raids so D1 and D2 versions are counted separately
+        const isReprised = D1_REPRISED_IN_D2.has(rawName);
+        const name = isReprised ? `${rawName} (${isD1 ? 'D1' : 'D2'})` : rawName;
 
         if (isD1) {
           tally.d1Raids[name] = (tally.d1Raids[name] || 0) + 1;
@@ -2535,16 +2573,23 @@
         }
       });
 
-      const hasD1 = Object.keys(tally.d1Raids).length > 0;
-      const hasD2R = Object.keys(tally.d2Raids).length > 0;
-      const hasD2D = Object.keys(tally.d2Dungeons).length > 0;
+      // Only show sections for games the user has actually loaded
+      const showD1 = !!state.d1ActiveCharId || state.loadAllD1;
+      const showD2 = !!state.activeCharId   || state.loadAllD2;
 
-      if (!hasD1 && !hasD2R && !hasD2D) {
+      if (!showD1 && !showD2) {
         panel.style.display = 'none';
         return;
       }
 
-      // Find global max for bar scaling
+      // Seed every master-list entry at 0 so uncleared activities always appear
+      if (showD1) D1_RAID_ROSTER.forEach(n => { if (!(n in tally.d1Raids))    tally.d1Raids[n]    = 0; });
+      if (showD2) {
+        D2_RAID_ROSTER.forEach(n    => { if (!(n in tally.d2Raids))    tally.d2Raids[n]    = 0; });
+        D2_DUNGEON_ROSTER.forEach(n => { if (!(n in tally.d2Dungeons)) tally.d2Dungeons[n] = 0; });
+      }
+
+      // Find global max (excluding zeros) for bar scaling
       const allCounts = [
         ...Object.values(tally.d1Raids),
         ...Object.values(tally.d2Raids),
@@ -2552,54 +2597,49 @@
       ];
       const maxCount = Math.max(...allCounts, 1);
 
-      function makeRows(map, fillClass) {
-        return Object.entries(map)
-          .sort((a, b) => b[1] - a[1])
-          .map(([name, count]) => {
-            const pct = Math.round((count / maxCount) * 100);
-            return `<div class="counter-row">
-              <div class="counter-name" title="${name}">${name}</div>
-              <div class="counter-bar-wrap">
-                <div class="counter-bar-track">
-                  <div class="counter-bar-fill ${fillClass}" style="width:${pct}%"></div>
-                </div>
-                <div class="counter-num${count === 0 ? ' zero' : ''}">${count}</div>
+      function makeRows(map, roster, fillClass) {
+        // Preserve roster order; append any activity names from actual data not in the roster
+        const rosterOrder = roster.filter(n => n in map);
+        const extras = Object.keys(map).filter(n => !roster.includes(n));
+        const ordered = [...rosterOrder, ...extras];
+        return ordered.map(name => {
+          const count = map[name] || 0;
+          const pct = count > 0 ? Math.round((count / maxCount) * 100) : 0;
+          return `<div class="counter-row${count === 0 ? ' uncleared' : ''}">
+            <div class="counter-name" title="${name}">${name}</div>
+            <div class="counter-bar-wrap">
+              <div class="counter-bar-track">
+                <div class="counter-bar-fill ${fillClass}" style="width:${pct}%"></div>
               </div>
-            </div>`;
-          }).join('');
+              <div class="counter-num${count === 0 ? ' zero' : ''}">${count === 0 ? '—' : count}</div>
+            </div>
+          </div>`;
+        }).join('');
       }
 
       let html = '';
 
-      // D1 group
-      if (hasD1) {
+      if (showD1) {
         html += `<div class="counter-game-group">
           <div class="counter-game-label d1">Destiny 1</div>
           <div class="counter-type-group">
             <div class="counter-type-label">Raids</div>
-            <div class="counter-rows">${makeRows(tally.d1Raids, 'd1')}</div>
+            <div class="counter-rows">${makeRows(tally.d1Raids, D1_RAID_ROSTER, 'd1')}</div>
           </div>
         </div>`;
       }
 
-      // D2 group
-      if (hasD2R || hasD2D) {
-        let d2Inner = '';
-        if (hasD2R) {
-          d2Inner += `<div class="counter-type-group">
-            <div class="counter-type-label">Raids</div>
-            <div class="counter-rows">${makeRows(tally.d2Raids, '')}</div>
-          </div>`;
-        }
-        if (hasD2D) {
-          d2Inner += `<div class="counter-type-group">
-            <div class="counter-type-label">Dungeons</div>
-            <div class="counter-rows">${makeRows(tally.d2Dungeons, 'dungeon')}</div>
-          </div>`;
-        }
+      if (showD2) {
         html += `<div class="counter-game-group">
           <div class="counter-game-label d2">Destiny 2</div>
-          ${d2Inner}
+          <div class="counter-type-group">
+            <div class="counter-type-label">Raids</div>
+            <div class="counter-rows">${makeRows(tally.d2Raids, D2_RAID_ROSTER, '')}</div>
+          </div>
+          <div class="counter-type-group">
+            <div class="counter-type-label">Dungeons</div>
+            <div class="counter-rows">${makeRows(tally.d2Dungeons, D2_DUNGEON_ROSTER, 'dungeon')}</div>
+          </div>
         </div>`;
       }
 

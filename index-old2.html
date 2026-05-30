@@ -2662,7 +2662,7 @@
     // Strip difficulty suffixes so variants of the same raid/dungeon collapse into one entry.
     // e.g. "Leviathan: Normal" → "Leviathan"
     //      "Leviathan, Eater of Worlds: Prestige" → "Leviathan, Eater of Worlds"
-    const DIFFICULTY_SUFFIXES = /:\s*(Normal|Prestige|Master|Legend|Guided Games|Heroic|Legendary|Standard)$/i;
+    const DIFFICULTY_SUFFIXES = /:\s*(Normal|Prestige|Master|Legend|Guided Games|Heroic|Legendary|Standard|Eternity|Explorer)$/i;
     function simplifyName(name) {
       return name.replace(DIFFICULTY_SUFFIXES, '').trim();
     }
@@ -3015,6 +3015,39 @@
           item.onclick = () => toggleActivity(item, instId);
         }
         list.appendChild(item);
+      });
+
+      // Pre-fetch fireteam data for every first-clear so it's cached and ready.
+      // Runs silently in the background — no UI changes until the user expands the card.
+      filtered.forEach(act => {
+        const instId  = act.activityDetails.instanceId;
+        const isD1    = !!act._isD1;
+        if (!firstClearInstances.has(instId)) return;
+        if (fireteamCache[instId] !== undefined) return; // already cached
+
+        if (isD1) {
+          d1ApiFetch(`/Destiny/Stats/PostGameCarnageReport/${instId}/`).then(data => {
+            if (data.ErrorCode !== 1) { fireteamCache[instId] = []; return; }
+            const entries = data.Response?.data?.entries || data.Response?.entries || [];
+            fireteamCache[instId] = entries.map(e => ({
+              player: {
+                destinyUserInfo: {
+                  membershipId: e.player?.destinyUserInfo?.membershipId,
+                  displayName:  e.player?.destinyUserInfo?.displayName,
+                  bungieGlobalDisplayName:     e.player?.destinyUserInfo?.displayName,
+                  bungieGlobalDisplayNameCode: null,
+                }
+              },
+              score:  e.score,
+              values: e.values,
+            }));
+          }).catch(() => { fireteamCache[instId] = []; });
+        } else {
+          apiFetch(`/Destiny2/Stats/PostGameCarnageReport/${instId}/`).then(data => {
+            if (data.ErrorCode !== 1) { fireteamCache[instId] = []; return; }
+            fireteamCache[instId] = data.Response?.entries || [];
+          }).catch(() => { fireteamCache[instId] = []; });
+        }
       });
 
       const multiChar = state.loadAllD2 || state.loadAllD1;

@@ -1161,6 +1161,119 @@
       .d1-setup-grid { grid-template-columns: 1fr 1fr; }
       .d1-setup-grid .d1-lookup-btn { grid-column: 1 / -1; }
     }
+    /* ── Completion Counter ── */
+    .counter-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      margin-bottom: 0;
+      overflow: hidden;
+    }
+    .counter-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 18px;
+      cursor: pointer;
+      user-select: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+    .counter-panel-header:hover { background: rgba(255,255,255,0.02); }
+    .counter-panel.open .counter-panel-header { border-bottom-color: var(--border); }
+    .counter-panel-title {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .counter-panel-title::before { content: '◆'; font-size: 7px; color: var(--accent2); }
+    .counter-chevron {
+      font-size: 10px;
+      color: var(--muted);
+      transition: transform 0.2s;
+    }
+    .counter-panel.open .counter-chevron { transform: rotate(180deg); }
+    .counter-body {
+      display: none;
+      padding: 14px 18px 18px;
+    }
+    .counter-panel.open .counter-body { display: block; }
+    .counter-game-group {
+      margin-bottom: 18px;
+    }
+    .counter-game-group:last-child { margin-bottom: 0; }
+    .counter-game-label {
+      font-size: 9px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .counter-game-label.d1 { color: #e8b86d; }
+    .counter-game-label.d2 { color: var(--accent2); }
+    .counter-type-group { margin-bottom: 12px; }
+    .counter-type-group:last-child { margin-bottom: 0; }
+    .counter-type-label {
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 7px;
+    }
+    .counter-rows { display: flex; flex-direction: column; gap: 5px; }
+    .counter-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 12px;
+    }
+    .counter-name {
+      font-size: 12px;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--ghost);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .counter-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 120px;
+    }
+    .counter-bar-track {
+      flex: 1;
+      height: 3px;
+      background: var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+    .counter-bar-fill {
+      position: absolute;
+      left: 0; top: 0; height: 100%;
+      background: var(--accent2);
+      transition: width 0.4s ease;
+    }
+    .counter-bar-fill.d1 { background: #e8b86d; }
+    .counter-bar-fill.dungeon { background: #7ecfb3; }
+    .counter-num {
+      font-size: 13px;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700;
+      color: var(--text);
+      min-width: 24px;
+      text-align: right;
+    }
+    .counter-num.zero { color: var(--muted); font-weight: 400; }
+
   </style>
 </head>
 
@@ -1298,6 +1411,15 @@
           <div class="summary-val" id="sumD1">—</div>
           <div class="summary-lbl">D1 Clears</div>
         </div>
+      </div>
+
+      <!-- ── Completion Counter ─────────────────────────────────────────────── -->
+      <div class="counter-panel" id="counterPanel" style="display:none; margin-bottom:12px;">
+        <div class="counter-panel-header" onclick="toggleCounterPanel()">
+          <div class="counter-panel-title">Clears by Activity</div>
+          <div class="counter-chevron">▼</div>
+        </div>
+        <div class="counter-body" id="counterBody"></div>
       </div>
 
       <div class="filter-bar" id="filterBar" style="display:none;">
@@ -2353,6 +2475,117 @@
 
     // ── Render ───────────────────────────────────────────────────────────────────
 
+    // ── Completion Counter ───────────────────────────────────────────────────────
+
+    let counterOpen = false;
+    function toggleCounterPanel() {
+      counterOpen = !counterOpen;
+      document.getElementById('counterPanel').classList.toggle('open', counterOpen);
+    }
+
+    function renderCounterPanel(activities, raidInstanceIds) {
+      const panel = document.getElementById('counterPanel');
+      const body  = document.getElementById('counterBody');
+
+      // Tally clears per activity name, split by game+type
+      // Structure: { d1Raids: {name: count}, d2Raids: {name: count}, d2Dungeons: {name: count} }
+      const tally = { d1Raids: {}, d2Raids: {}, d2Dungeons: {} };
+
+      activities.forEach(act => {
+        if (!isActualClear(act.values)) return;
+        const isD1   = !!act._isD1;
+        const isRaid = raidInstanceIds.has(act.activityDetails.instanceId);
+        const isReprised = !isD1 && D1_REPRISED_IN_D2.has(
+          nameCache[act.activityDetails.referenceId] || ''
+        );
+        const rawName = isD1
+          ? act._d1Name
+          : (nameCache[act.activityDetails.referenceId] || 'Unknown Activity');
+        const name = (isReprised || (isD1 && D1_REPRISED_IN_D2.has(rawName)))
+          ? `${rawName} (${isD1 ? 'D1' : 'D2'})`
+          : rawName;
+
+        if (isD1) {
+          tally.d1Raids[name] = (tally.d1Raids[name] || 0) + 1;
+        } else if (isRaid) {
+          tally.d2Raids[name] = (tally.d2Raids[name] || 0) + 1;
+        } else {
+          tally.d2Dungeons[name] = (tally.d2Dungeons[name] || 0) + 1;
+        }
+      });
+
+      const hasD1 = Object.keys(tally.d1Raids).length > 0;
+      const hasD2R = Object.keys(tally.d2Raids).length > 0;
+      const hasD2D = Object.keys(tally.d2Dungeons).length > 0;
+
+      if (!hasD1 && !hasD2R && !hasD2D) {
+        panel.style.display = 'none';
+        return;
+      }
+
+      // Find global max for bar scaling
+      const allCounts = [
+        ...Object.values(tally.d1Raids),
+        ...Object.values(tally.d2Raids),
+        ...Object.values(tally.d2Dungeons),
+      ];
+      const maxCount = Math.max(...allCounts, 1);
+
+      function makeRows(map, fillClass) {
+        return Object.entries(map)
+          .sort((a, b) => b[1] - a[1])
+          .map(([name, count]) => {
+            const pct = Math.round((count / maxCount) * 100);
+            return `<div class="counter-row">
+              <div class="counter-name" title="${name}">${name}</div>
+              <div class="counter-bar-wrap">
+                <div class="counter-bar-track">
+                  <div class="counter-bar-fill ${fillClass}" style="width:${pct}%"></div>
+                </div>
+                <div class="counter-num${count === 0 ? ' zero' : ''}">${count}</div>
+              </div>
+            </div>`;
+          }).join('');
+      }
+
+      let html = '';
+
+      // D1 group
+      if (hasD1) {
+        html += `<div class="counter-game-group">
+          <div class="counter-game-label d1">Destiny 1</div>
+          <div class="counter-type-group">
+            <div class="counter-type-label">Raids</div>
+            <div class="counter-rows">${makeRows(tally.d1Raids, 'd1')}</div>
+          </div>
+        </div>`;
+      }
+
+      // D2 group
+      if (hasD2R || hasD2D) {
+        let d2Inner = '';
+        if (hasD2R) {
+          d2Inner += `<div class="counter-type-group">
+            <div class="counter-type-label">Raids</div>
+            <div class="counter-rows">${makeRows(tally.d2Raids, '')}</div>
+          </div>`;
+        }
+        if (hasD2D) {
+          d2Inner += `<div class="counter-type-group">
+            <div class="counter-type-label">Dungeons</div>
+            <div class="counter-rows">${makeRows(tally.d2Dungeons, 'dungeon')}</div>
+          </div>`;
+        }
+        html += `<div class="counter-game-group">
+          <div class="counter-game-label d2">Destiny 2</div>
+          ${d2Inner}
+        </div>`;
+      }
+
+      body.innerHTML = html;
+      panel.style.display = 'block';
+    }
+
     function renderActivities(activities, firstClearInstances, raidInstanceIds) {
       // Persist for re-render when filter toggles
       state.renderedActivities  = activities;
@@ -2508,6 +2741,9 @@
       document.getElementById('sumD1').textContent = d1Clears;
       document.getElementById('summaryBar').style.display = 'flex';
       document.getElementById('filterBar').style.display = 'flex';
+
+      // Render the per-activity completion counter
+      renderCounterPanel(activities, raidInstanceIds);
 
       // Show/hide filter options based on what games are loaded
       const d1Only = state.d1ActiveCharId && !state.activeCharId;

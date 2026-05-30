@@ -1466,13 +1466,13 @@
 
       <div class="filter-bar" id="filterBar" style="display:none;">
         <label class="filter-toggle" onclick="toggleSoloFilter()">
-          <div class="toggle-track" id="soloToggleTrack">
+          <div class="toggle-track on" id="soloToggleTrack">
             <div class="toggle-thumb"></div>
           </div>
           Hide solo raid runs
         </label>
         <label class="filter-toggle" onclick="toggleFailedFilter()">
-          <div class="toggle-track" id="failedToggleTrack">
+          <div class="toggle-track on" id="failedToggleTrack">
             <div class="toggle-thumb"></div>
           </div>
           Hide failed runs
@@ -2451,8 +2451,8 @@
 
     // ── Solo filter ──────────────────────────────────────────────────────────────
 
-    let hideSolo = false;
-    let hideFailed = false;
+    let hideSolo = true;
+    let hideFailed = true;
     let hideCheckpoint = false;
     let activityTypeFilter = 'both';
 

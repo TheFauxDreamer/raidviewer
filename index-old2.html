@@ -1451,7 +1451,15 @@
       <div class="counter-panel" id="counterPanel" style="display:none; margin-bottom:12px;">
         <div class="counter-panel-header" onclick="toggleCounterPanel()">
           <div class="counter-panel-title">Clears by Activity</div>
-          <div class="counter-chevron">▼</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-left:auto;">
+            <label class="filter-toggle" onclick="event.stopPropagation(); toggleSimplifiedMode()" style="font-size:10px;letter-spacing:0.12em;color:var(--muted);cursor:pointer;user-select:none;">
+              <div class="toggle-track" id="simplifiedToggleTrack">
+                <div class="toggle-thumb"></div>
+              </div>
+              Simplified
+            </label>
+            <div class="counter-chevron">▼</div>
+          </div>
         </div>
         <div class="counter-body" id="counterBody"></div>
       </div>
@@ -2636,9 +2644,27 @@
     // ── Completion Counter ───────────────────────────────────────────────────────
 
     let counterOpen = false;
+    let simplifiedMode = false;
     function toggleCounterPanel() {
       counterOpen = !counterOpen;
       document.getElementById('counterPanel').classList.toggle('open', counterOpen);
+    }
+
+    function toggleSimplifiedMode() {
+      simplifiedMode = !simplifiedMode;
+      const track = document.getElementById('simplifiedToggleTrack');
+      if (track) track.classList.toggle('on', simplifiedMode);
+      if (state.renderedActivities) {
+        renderCounterPanel(state.renderedActivities, state.renderedRaidIds);
+      }
+    }
+
+    // Strip difficulty suffixes so variants of the same raid/dungeon collapse into one entry.
+    // e.g. "Leviathan: Normal" → "Leviathan"
+    //      "Leviathan, Eater of Worlds: Prestige" → "Leviathan, Eater of Worlds"
+    const DIFFICULTY_SUFFIXES = /:\s*(Normal|Prestige|Master|Legend|Guided Games|Heroic|Legendary)$/i;
+    function simplifyName(name) {
+      return name.replace(DIFFICULTY_SUFFIXES, '').trim();
     }
 
     // Master lists of every raid/dungeon — used to show zero-clear entries in the counter panel.
@@ -2719,18 +2745,44 @@
         return;
       }
 
+      // In simplified mode, merge difficulty variants into the base activity name.
+      // e.g. "Leviathan: Normal" + "Leviathan: Prestige" → "Leviathan"
+      function collapseTally(map) {
+        if (!simplifiedMode) return map;
+        const out = {};
+        for (const [name, count] of Object.entries(map)) {
+          const base = simplifyName(name);
+          out[base] = (out[base] || 0) + count;
+        }
+        return out;
+      }
+
+      // Build simplified rosters (de-duplicate after stripping suffixes)
+      function simplifyRoster(roster) {
+        if (!simplifiedMode) return roster;
+        const seen = new Set();
+        return roster.map(n => simplifyName(n)).filter(n => { if (seen.has(n)) return false; seen.add(n); return true; });
+      }
+
+      const d1RaidTally     = collapseTally(tally.d1Raids);
+      const d2RaidTally     = collapseTally(tally.d2Raids);
+      const d2DungeonTally  = collapseTally(tally.d2Dungeons);
+      const d1Roster        = simplifyRoster(D1_RAID_ROSTER);
+      const d2RaidRoster    = simplifyRoster(D2_RAID_ROSTER);
+      const d2DungeonRoster = simplifyRoster(D2_DUNGEON_ROSTER);
+
       // Seed every master-list entry at 0 so uncleared activities always appear
-      if (showD1) D1_RAID_ROSTER.forEach(n => { if (!(n in tally.d1Raids))    tally.d1Raids[n]    = 0; });
+      if (showD1) d1Roster.forEach(n => { if (!(n in d1RaidTally))    d1RaidTally[n]    = 0; });
       if (showD2) {
-        D2_RAID_ROSTER.forEach(n    => { if (!(n in tally.d2Raids))    tally.d2Raids[n]    = 0; });
-        D2_DUNGEON_ROSTER.forEach(n => { if (!(n in tally.d2Dungeons)) tally.d2Dungeons[n] = 0; });
+        d2RaidRoster.forEach(n    => { if (!(n in d2RaidTally))    d2RaidTally[n]    = 0; });
+        d2DungeonRoster.forEach(n => { if (!(n in d2DungeonTally)) d2DungeonTally[n] = 0; });
       }
 
       // Find global max (excluding zeros) for bar scaling
       const allCounts = [
-        ...Object.values(tally.d1Raids),
-        ...Object.values(tally.d2Raids),
-        ...Object.values(tally.d2Dungeons),
+        ...Object.values(d1RaidTally),
+        ...Object.values(d2RaidTally),
+        ...Object.values(d2DungeonTally),
       ];
       const maxCount = Math.max(...allCounts, 1);
 
@@ -2761,7 +2813,7 @@
           <div class="counter-game-label d1">Destiny 1</div>
           <div class="counter-type-group">
             <div class="counter-type-label">Raids</div>
-            <div class="counter-rows">${makeRows(tally.d1Raids, D1_RAID_ROSTER, 'd1')}</div>
+            <div class="counter-rows">${makeRows(d1RaidTally, d1Roster, 'd1')}</div>
           </div>
         </div>`;
       }
@@ -2771,11 +2823,11 @@
           <div class="counter-game-label d2">Destiny 2</div>
           <div class="counter-type-group">
             <div class="counter-type-label">Raids</div>
-            <div class="counter-rows">${makeRows(tally.d2Raids, D2_RAID_ROSTER, '')}</div>
+            <div class="counter-rows">${makeRows(d2RaidTally, d2RaidRoster, '')}</div>
           </div>
           <div class="counter-type-group">
             <div class="counter-type-label">Dungeons</div>
-            <div class="counter-rows">${makeRows(tally.d2Dungeons, D2_DUNGEON_ROSTER, 'dungeon')}</div>
+            <div class="counter-rows">${makeRows(d2DungeonTally, d2DungeonRoster, 'dungeon')}</div>
           </div>
         </div>`;
       }

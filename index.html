@@ -2655,7 +2655,7 @@
       const track = document.getElementById('simplifiedToggleTrack');
       if (track) track.classList.toggle('on', simplifiedMode);
       if (state.renderedActivities) {
-        renderCounterPanel(state.renderedActivities, state.renderedRaidIds);
+        renderActivities(state.renderedActivities, state.renderedFirstClears, state.renderedRaidIds);
       }
     }
 
@@ -2841,6 +2841,27 @@
       state.renderedActivities  = activities;
       state.renderedFirstClears = firstClearInstances;
       state.renderedRaidIds     = raidInstanceIds;
+
+      // When simplified mode is on, recompute first clears keyed by simplified name so
+      // difficulty variants (e.g. Leviathan: Normal / Leviathan: Prestige) share one
+      // first-clear badge — whichever was completed first gets it, not both.
+      if (simplifiedMode) {
+        firstClearInstances = new Set();
+        const seenSimple = new Set();
+        activities.forEach(act => {
+          if (!isActualClear(act.values)) return;
+          const isD1 = act._isD1;
+          const rawName = isD1
+            ? act._d1Name
+            : (nameCache[act.activityDetails.referenceId] || ('hash:' + act.activityDetails.directorActivityHash));
+          const baseName = simplifyName(rawName);
+          const key = (isD1 ? 'D1' : 'D2') + ':' + baseName;
+          if (!seenSimple.has(key)) {
+            firstClearInstances.add(act.activityDetails.instanceId);
+            seenSimple.add(key);
+          }
+        });
+      }
 
       // Apply filters
       let filtered = activities;

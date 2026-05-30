@@ -2662,7 +2662,7 @@
     // Strip difficulty suffixes so variants of the same raid/dungeon collapse into one entry.
     // e.g. "Leviathan: Normal" → "Leviathan"
     //      "Leviathan, Eater of Worlds: Prestige" → "Leviathan, Eater of Worlds"
-    const DIFFICULTY_SUFFIXES = /:\s*(Normal|Prestige|Master|Legend|Guided Games|Heroic|Legendary)$/i;
+    const DIFFICULTY_SUFFIXES = /:\s*(Normal|Prestige|Master|Legend|Guided Games|Heroic|Legendary|Standard)$/i;
     function simplifyName(name) {
       return name.replace(DIFFICULTY_SUFFIXES, '').trim();
     }

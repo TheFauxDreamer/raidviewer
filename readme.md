@@ -2,7 +2,8 @@
 
 Destiny 2 is receiving its final live service update on June 10th, 2026. (Status: Calamitous)
 
-Destiny has been a huge part of my life since I joined in 2016 with Rise of Iron. Destiny 2 was my third space and how I met so many good friends that are still with me all these years later, almost every day for ten years, if not every week, we explored the worlds and slayed gods. So did many other Guardians. Thank you to those I met along the way, those I watched, the ones who crafted this universe for us all, and good luck to those I never had the opportunity to meet.
+Destiny has been a huge part of my life since I joined in 2016 with Rise of Iron. Destiny 2 was my third space and how I met so many good friends that are still with me all these years later, almost every day for ten years, if not every week, we explored the worlds and slayed gods. So did many other Guardians.
+Thank you to those I met along the way, those I watched, the ones who crafted this universe for us all, and good luck to those I never had the opportunity to meet.
 
 ---
 

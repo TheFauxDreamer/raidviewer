@@ -38,4 +38,6 @@ To run this project fully, you need to register an application with Bungie to ob
 * [Bungie Developer Portal](https://www.bungie.net/en/Application)
 
 
+There will never be another one like you, Destiny, be it the universe or games.
+
 _Per Audacia Ad Astra_

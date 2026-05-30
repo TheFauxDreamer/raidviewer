@@ -1,8 +1,18 @@
-# Ghost - Guardian Lookup
+# Raid History Report
 
-Ghost is a web interface for tracking Raid and Dungeon completion histories for players across Destiny 1 and Destiny 2. 
+Destiny 2 is receiving its final live service update on June 10th, 2026. (Status: Calamitous)
 
-It uses the Bungie.net API to search for Guardians, pull their activity logs, and display character-specific or account-wide statistics, including fireteam breakdowns.
+Destiny has been a huge part of my life since I joined in 2016 with Rise of Iron. Destiny 2 was my third space and how I met so many good friends that are still with me all these years later, almost every day for ten years, if not every week. I explored the worlds and slayed gods. So did many other Guardians. Thank you to those I met along the way, those I watched, the ones who crafted this universe for us all, and good luck to those I never had the opportunity to meet.
+
+---
+
+## Purpose
+
+Once I started raiding, I loved it (except for Last Wish; those were miserable experiences), but carrying those Guardians through VOG in D2 for the [**Share a Glass**](https://destinyemblemcollector.com/emblem?id=3953403255) emblem is something I'll remember for a long, long time.
+
+I loved launching Destiny 2 for the first time and seeing what I had achieved in Destiny 1, if only the story missions. It felt like a love letter to the time, effort, and friends we'd made throughout our adventures in Sol.
+
+I wanted to recreate that for Destiny 2, as well as provide a full list of completions from the API so you can take a minute and reminisce, like I have while putting this together.
 
 ---
 
@@ -25,7 +35,5 @@ It uses the Bungie.net API to search for Guardians, pull their activity logs, an
 To run this project fully, you need to register an application with Bungie to obtain an API key for the backend requests.
 * [Bungie Developer Portal](https://www.bungie.net/en/Application)
 
-### Installation
-1. Clone the repository:
-   ```bash
-   git clone [https://github.com/yourusername/ghost-guardian-lookup.git](https://github.com/yourusername/ghost-guardian-lookup.git)
+
+_Per Audacia Ad Astra_

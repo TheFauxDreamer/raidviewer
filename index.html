@@ -2266,7 +2266,6 @@
     }
 
 
-
     async function loadAllHistory() {
       document.getElementById('activityList').innerHTML =
         '<div class="empty-state"><div class="spinner" style="margin:0 auto 16px;width:24px;height:24px;border-width:2px"></div><p id="loadingMsg">Scanning history...</p></div>';
@@ -2456,29 +2455,6 @@
         // Also update profile header whenever history reloads (char selection may have changed)
         updateProfileHeader();
 
-        // Resolve _isCheckpoint for all completed D2 activities before rendering,
-        // so the "Full runs only" toggle works immediately when the list appears.
-        // Fetches PGCRs in parallel batches of 8; status bar keeps the user informed.
-        const toResolve = all.filter(a => !a._isD1 && a._isCheckpoint === null && isActualClear(a.values));
-        const BATCH = 8;
-        for (let i = 0; i < toResolve.length; i += BATCH) {
-          showStatus(`Checking checkpoint runs (${Math.min(i + BATCH, toResolve.length)} / ${toResolve.length})...`, 'info', true);
-          await Promise.all(toResolve.slice(i, i + BATCH).map(async act => {
-            const instId = act.activityDetails.instanceId;
-            try {
-              const data = await apiFetch(`/Destiny2/Stats/PostGameCarnageReport/${instId}/`);
-              if (data.ErrorCode !== 1) { act._isCheckpoint = false; return; }
-              if (fireteamCache[instId] === undefined) {
-                fireteamCache[instId] = data.Response?.entries || [];
-              }
-              const wasFromBeginning = data.Response?.activityWasStartedFromBeginning;
-              act._isCheckpoint = typeof wasFromBeginning === 'boolean' ? !wasFromBeginning : false;
-            } catch {
-              act._isCheckpoint = false;
-            }
-          }));
-        }
-
         hideStatus();
         renderActivities(all, firstClearInstances, raidInstanceIds);
       } catch (e) {
@@ -2540,6 +2516,32 @@
         if (data.ErrorCode !== 1) throw new Error(data.Message || 'API error');
         const entries = data.Response?.entries || [];
         fireteamCache[instanceId] = entries;
+
+        // Resolve _isCheckpoint from the PGCR now that we have it.
+        // activityWasStartedFromBeginning = false → run started from a checkpoint.
+        // Known caveats: unreliable for pre-Feb-2022 PGCRs and Last Wish runs.
+        const wasFromBeginning = data.Response?.activityWasStartedFromBeginning;
+        if (typeof wasFromBeginning === 'boolean') {
+          const act = state.renderedActivities?.find(
+            a => a.activityDetails?.instanceId === instanceId
+          );
+          if (act && act._isCheckpoint === null) {
+            act._isCheckpoint = !wasFromBeginning;
+            // Update the checkpoint badge on the rendered card without a full re-render
+            const badge = item.querySelector('.checkpoint-badge');
+            if (act._isCheckpoint && !badge) {
+              const nameRow = item.querySelector('.act-name-row');
+              if (nameRow) {
+                const b = document.createElement('div');
+                b.className = 'checkpoint-badge';
+                b.textContent = 'Checkpoint';
+                nameRow.appendChild(b);
+              }
+            } else if (!act._isCheckpoint && badge) {
+              badge.remove();
+            }
+          }
+        }
 
         renderFireteam(panel, entries);
       } catch (e) {

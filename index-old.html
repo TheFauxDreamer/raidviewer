@@ -1931,12 +1931,16 @@
         let results = [];
 
         if (hasCode) {
-          // Exact match — one entry per platform the player is on
+          // Exact match — returns one entry per platform; group them all so "All Platforms" works.
           const displayName = raw.slice(0, hi);
           const displayNameCode = parseInt(raw.slice(hi + 1)) || 0;
           const data = await apiPost('/Destiny2/SearchDestinyPlayerByBungieName/-1/', { displayName, displayNameCode });
           if (data.ErrorCode !== 1) { showStatus('Error: ' + (data.Message || 'API error'), 'error', false); return; }
-          results = data.Response || [];
+          const allMbships = (data.Response || []).filter(m => m.membershipType !== 254 && m.membershipId);
+          if (allMbships.length) {
+            const primary = allMbships.find(m => m.membershipType === m.crossSaveOverride) || allMbships[0];
+            results = [{ ...primary, allMemberships: allMbships }];
+          }
         } else {
           // Prefix search — one entry per unique Bungie user
           let page = 0;
@@ -2276,7 +2280,7 @@
 
         // When loadAllPlatforms is on we fetch every cross-save membership; otherwise just primary.
         // Each membership may have its own set of characters — we collect them all.
-        const membershipsToFetch = state.loadAllPlatforms && state.allPlatformMemberships.length > 1
+        const membershipsToFetch = state.loadAllPlatforms && state.allPlatformMemberships.length
           ? state.allPlatformMemberships
           : [{ membershipId: state.membershipId, membershipType: state.membershipType }];
 

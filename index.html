@@ -2359,11 +2359,19 @@
             });
           }
 
-          // Tag each D2 activity: startingPhaseIndex > 0 means the player joined mid-run (checkpoint).
-          // Phase 0 = fresh start from the very first encounter.
-          // The field lives under values.startingPhaseIndex.basic.value, not activityDetails.
+          // Tag each D2 activity as a checkpoint run or not.
+          //
+          // The activity history endpoint (/Stats/Activities/) does NOT include
+          // startingPhaseIndex or activityWasStartedFromBeginning — both of those
+          // only appear on the PGCR, which requires a separate per-activity fetch.
+          //
+          // Strategy: mark _isCheckpoint = null (unknown) here. When a PGCR is
+          // fetched (on card expand or first-clear prefetch), we update the flag
+          // using activityWasStartedFromBeginning from the PGCR response.
+          // The toggle filter treats null as "not a checkpoint" so unresolved
+          // activities remain visible until their PGCR is loaded.
           d2all = [...allRaids, ...allDungeons].map(a => {
-            a._isCheckpoint = (a.values?.startingPhaseIndex?.basic?.value ?? 0) > 0;
+            a._isCheckpoint = null; // resolved lazily via PGCR
             return a;
           }).sort((a, b) => new Date(a.period) - new Date(b.period));
 
@@ -2508,6 +2516,33 @@
         if (data.ErrorCode !== 1) throw new Error(data.Message || 'API error');
         const entries = data.Response?.entries || [];
         fireteamCache[instanceId] = entries;
+
+        // Resolve _isCheckpoint from the PGCR now that we have it.
+        // activityWasStartedFromBeginning = false → run started from a checkpoint.
+        // Known caveats: unreliable for pre-Feb-2022 PGCRs and Last Wish runs.
+        const wasFromBeginning = data.Response?.activityWasStartedFromBeginning;
+        if (typeof wasFromBeginning === 'boolean') {
+          const act = state.renderedActivities?.find(
+            a => a.activityDetails?.instanceId === instanceId
+          );
+          if (act && act._isCheckpoint === null) {
+            act._isCheckpoint = !wasFromBeginning;
+            // Update the checkpoint badge on the rendered card without a full re-render
+            const badge = item.querySelector('.checkpoint-badge');
+            if (act._isCheckpoint && !badge) {
+              const nameRow = item.querySelector('.act-name-row');
+              if (nameRow) {
+                const b = document.createElement('div');
+                b.className = 'checkpoint-badge';
+                b.textContent = 'Checkpoint';
+                nameRow.appendChild(b);
+              }
+            } else if (!act._isCheckpoint && badge) {
+              badge.remove();
+            }
+          }
+        }
+
         renderFireteam(panel, entries);
       } catch (e) {
         panel.innerHTML = `<div class="fireteam-error">Failed to load fireteam: ${e.message}</div>`;
@@ -2883,7 +2918,8 @@
         filtered = filtered.filter(act => isActualClear(act.values));
       }
       if (hideCheckpoint) {
-        filtered = filtered.filter(act => !act._isCheckpoint);
+        // _isCheckpoint === null means PGCR not yet fetched — keep visible rather than hiding prematurely
+        filtered = filtered.filter(act => act._isCheckpoint !== true);
       }
       if (activityTypeFilter === 'raids') {
         filtered = filtered.filter(act => raidInstanceIds.has(act.activityDetails.instanceId));

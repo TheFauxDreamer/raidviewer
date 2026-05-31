@@ -2357,8 +2357,9 @@
 
           // Tag each D2 activity: startingPhaseIndex > 0 means the player joined mid-run (checkpoint).
           // Phase 0 = fresh start from the very first encounter.
+          // The field lives under values.startingPhaseIndex.basic.value, not activityDetails.
           d2all = [...allRaids, ...allDungeons].map(a => {
-            a._isCheckpoint = (a.activityDetails?.startingPhaseIndex ?? 0) > 0;
+            a._isCheckpoint = (a.values?.startingPhaseIndex?.basic?.value ?? 0) > 0;
             return a;
           }).sort((a, b) => new Date(a.period) - new Date(b.period));
 

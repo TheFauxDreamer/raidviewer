@@ -476,6 +476,90 @@ button.small {
   margin-top: 2px;
 }
 
+/* ── Chapter navigation ────────────────────────────────────────────────── */
+.chapter-nav {
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.chapter-nav-scroll {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.chapter-nav-scroll::-webkit-scrollbar { height: 4px; }
+.chapter-nav-scroll::-webkit-scrollbar-track { background: transparent; }
+.chapter-nav-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.chapter-chip {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  font-size: 11px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.chapter-chip:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.chapter-chip.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(212, 175, 55, 0.06);
+}
+
+.chapter-chip.empty {
+  opacity: 0.35;
+  border-style: dashed;
+}
+
+/* ── Chapter headers (in timeline) ─────────────────────────────────────── */
+.chapter-header {
+  margin: 28px 0 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+.chapter-header span {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--space);
+  padding-right: 14px;
+  position: relative;
+  z-index: 1;
+}
+
+.chapter-header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  opacity: 0.3;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    TIMELINE VIEW
    ═══════════════════════════════════════════════════════════════════════════ */

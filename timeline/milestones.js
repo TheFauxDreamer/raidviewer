@@ -678,3 +678,247 @@ const TITLE_FLAVOUR = {
   'Iron Lord': 'You became an Iron Lord. The wolves of the Iron Banner answer to you now.',
 
 };
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Milestone Chapters
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Defines the chapter groupings for the timeline navigation menu.
+   Each chapter has an id, a display label, and a list of mission names
+   that belong to it.  Missions are matched by their display name.
+
+   Chapters appear in the order defined here.  Missions not listed in any
+   chapter are grouped under "Other".
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const MILESTONE_CHAPTERS = [
+  {
+    id: 'red-war',
+    label: 'Red War',
+    missions: [
+      'Homecoming', 'Adieu', 'Spark', 'Combustion', 'Hope', 'Riptide',
+      'Utopia', 'Looped', 'Six', 'Sacrilege', 'Fury', 'Payback',
+      'Unbroken', 'Larceny', '1AU', 'Chosen',
+    ],
+  },
+  {
+    id: 'curse-of-osiris',
+    label: 'Curse of Osiris',
+    missions: [
+      'The Gateway', 'A Deadly Trial', 'Beyond Infinity', 'Deep Storage',
+      'Tree of Probabilities', 'Hijacked', 'A Garden World', 'Omega',
+    ],
+  },
+  {
+    id: 'warmind',
+    label: 'Warmind',
+    missions: [
+      'Ice and Shadow', 'Pilgrimage', 'Off-World Recovery',
+      'Strange Terrain', 'Will of the Thousands',
+    ],
+  },
+  {
+    id: 'forsaken',
+    label: 'Forsaken',
+    missions: [
+      'Last Call', 'High Plains Blues', 'Scorned', 'The Machinist',
+      'Nothing Left to Say', 'A Hum of Starlight', 'Awakening',
+      'Broken Courier', 'The Oracle Engine', 'Dark Monastery',
+    ],
+  },
+  {
+    id: 'forge',
+    label: 'Season of the Forge',
+    missions: ['Scourge of the Armory', 'Origin: Nessus', 'Rekindle the Flames', 'Niobe\'s Torment'],
+  },
+  {
+    id: 'dawn',
+    label: 'Season of Dawn',
+    missions: ['Corridors of Time Part 1', 'Corridors of Time Part 2', 'Open the Gate'],
+  },
+  {
+    id: 'worthy',
+    label: 'Season of the Worthy',
+    missions: [
+      'Into the Mindlab', 'Boot Sector', 'Lunar Connection',
+      'Expand and Collapse', 'A Warmind\'s Secrets', 'The Tyrant',
+    ],
+  },
+  {
+    id: 'arrivals',
+    label: 'Season of Arrivals',
+    missions: ['A Shadow Overhead', 'Interference'],
+  },
+  {
+    id: 'shadowkeep',
+    label: 'Shadowkeep',
+    missions: [
+      'A Mysterious Disturbance', 'In Search of Answers',
+      'The Scarlet Keep', 'In the Deep', 'Beyond',
+    ],
+  },
+  {
+    id: 'hunt',
+    label: 'Season of the Hunt',
+    missions: ['Trail of the Hunted', 'Cry from Beyond', 'The Crow and the Hawk', 'Coup de Grâce'],
+  },
+  {
+    id: 'beyond-light',
+    label: 'Beyond Light',
+    missions: [
+      'Darkness\'s Doorstep', 'The New Kell', 'Rising Resistance',
+      'The Warrior', 'The Technocrat', 'The Glassway',
+      'The Kell of Darkness', 'Sabotaging Salvation', 'The Aftermath',
+      'The Dark Priestess',
+    ],
+  },
+  {
+    id: 'chosen',
+    label: 'Season of the Chosen',
+    missions: [
+      'Battleground: Behemoth', 'Battleground: Hailstone',
+      'Battleground: Foothold', 'Battleground: Oracle', 'Proving Grounds',
+    ],
+  },
+  {
+    id: 'splicer',
+    label: 'Season of the Splicer',
+    missions: [
+      'The Lost Splicer', 'Expunge: Labyrinth', 'Expunge: Styx',
+      'Expunge: Tartarus', 'Expunge: Delphi',
+    ],
+  },
+  {
+    id: 'lost',
+    label: 'Season of the Lost',
+    missions: [
+      'Cocoon', 'Shattered Realm: Forest of Echoes',
+      'Shattered Realm: Debris of Dreams', 'Shattered Realm: Ruins of Wrath',
+      'Exorcism',
+    ],
+  },
+  {
+    id: 'witch-queen',
+    label: 'The Witch Queen',
+    missions: [
+      'The Arrival', 'The Investigation', 'The Ghosts', 'The Communion',
+      'The Mirror', 'The Cunning', 'The Last Chance', 'The Ritual',
+      'Preservation',
+    ],
+  },
+  {
+    id: 'haunted',
+    label: 'Season of the Haunted',
+    missions: [
+      'Operation: Midas', 'Sever - Shame', 'Sever - Reconciliation',
+      'Sever - Grief', 'Sever - Forgiveness', 'Sever - Rage',
+      'Sever - Resolve', 'Catharsis',
+    ],
+  },
+  {
+    id: 'plunder',
+    label: 'Season of Plunder',
+    missions: [
+      'Salvage and Salvation', 'Pirate Hideout: The Brute',
+      'Pirate Hideout: The Sharpshooter', 'Pirate Hideout: The Blademasters',
+      'Pirate Hideout: The Beast Tamer', 'Pirate Hideout: The Bully',
+      'Pirate Hideout: The Coward', 'Pirate Hideout: The Scrapworker',
+      'Pirate Hideout: The Lucent Brood',
+    ],
+  },
+  {
+    id: 'seraph',
+    label: 'Season of the Seraph',
+    missions: [
+      'Hierarchy', 'Operation: Archimedes', 'Operation: Diocles',
+      'Operation: Seraph\'s Shield', 'Operation: Son of Saturn',
+      'Operation: Sancus', 'ABHORRENT IMPERATIVE',
+    ],
+  },
+  {
+    id: 'lightfall',
+    label: 'Lightfall',
+    missions: [
+      'First Contact', 'Under Siege', 'Downfall', 'Breakneck',
+      'On The Verge', 'No Time Left', 'Headlong', 'Desperate Measures',
+      'Partition: Hard Reset', 'Partition: Backdoor', 'Partition: Ordnance',
+      'Parting the Veil',
+    ],
+  },
+  {
+    id: 'defiance',
+    label: 'Season of Defiance',
+    missions: [
+      'Mission: Jailbreak', 'Defiant Battleground: EDZ',
+      'Defiant Battleground: Cosmodrome', 'Defiant Battleground: Orbital Prison',
+      'Mission: Retribution',
+    ],
+  },
+  {
+    id: 'deep',
+    label: 'Season of the Deep',
+    missions: [
+      'The Descent', 'Operation Thunderbolt (Twilight)',
+      'Mayday, Mayday (Midnight)', 'Operation Fulgurite (Abyss)', 'Barotrauma',
+    ],
+  },
+  {
+    id: 'witch',
+    label: 'Season of the Witch',
+    missions: ['Way of the Witch', 'Mission: Invoke', 'Mission: Conjure', 'Mission: Sunder'],
+  },
+  {
+    id: 'wish',
+    label: 'Season of the Wish',
+    missions: [
+      'Final Wish', 'Polysemy', 'Tautology', 'Enthymeme', 'Apophasis',
+      'Synchysis', 'Chiasmus', 'Final Words', 'Closer to the Heart',
+    ],
+  },
+  {
+    id: 'final-shape',
+    label: 'The Final Shape',
+    missions: [
+      'Transmigration', 'Temptation', 'Exegesis', 'Requiem', 'Ascent',
+      'Dissent', 'Iconoclasm', 'Excision',
+    ],
+  },
+  {
+    id: 'echoes',
+    label: 'Episode: Echoes',
+    missions: ['Mission: Meteoric', 'Mission: Mesmerize', 'Mission: Shell', 'Encore'],
+  },
+  {
+    id: 'revenant',
+    label: 'Episode: Revenant',
+    missions: ['Na-Veskirisk', 'Something Left to Say', 'Captive Memories', 'Kell\'s Fall'],
+  },
+  {
+    id: 'heresy',
+    label: 'Episode: Heresy',
+    missions: ['Espial', 'Recce', 'Kludge', 'Renascence', 'Mission Captis', 'Appellation', 'Resile'],
+  },
+  {
+    id: 'reclamation',
+    label: 'Reclamation',
+    missions: ['Ash & Iron: Initialize'],
+  },
+  {
+    id: 'edge-of-fate',
+    label: 'The Edge of Fate',
+    missions: [
+      'Mission: The Invitation', 'Mission: Transient', 'Mission: Saturnism',
+      'Gouge', 'Mission: Fallow', 'Mission: Nostos', 'Commencement',
+      'Mission: Morphology', 'Charge', 'Mission: Disruption',
+      'Mission: Calculus', 'Quarantine', 'Mission: Criticality', 'The Message',
+    ],
+  },
+  {
+    id: 'renegades',
+    label: 'Renegades',
+    missions: [
+      'Imperium', 'Welcome to the Frontier', 'Fearsome Retainer',
+      'Out in the Cold', 'The Long Con', 'Glory Beyond',
+    ],
+  },
+];

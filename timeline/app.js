@@ -549,6 +549,29 @@ function switchView(view) {
   }
 }
 
+// ── Chapter helpers ────────────────────────────────────────────────────────
+
+// Build a lookup: mission name → chapter id
+const _chapterLookup = {};
+(function buildChapterLookup() {
+  for (const ch of MILESTONE_CHAPTERS) {
+    for (const name of ch.missions) {
+      _chapterLookup[name] = ch.id;
+    }
+  }
+})();
+
+function getChapterId(milestone) {
+  // Titles don't belong to chapters
+  if (milestone.type === 'title') return null;
+  return _chapterLookup[milestone.name] || null;
+}
+
+function getChapterLabel(chapterId) {
+  const ch = MILESTONE_CHAPTERS.find(c => c.id === chapterId);
+  return ch ? ch.label : null;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // TIMELINE VIEW
 // ═══════════════════════════════════════════════════════════════════════════
@@ -564,10 +587,59 @@ function renderTimeline() {
 
   if (!allItems.length) {
     container.innerHTML = '<div class="empty-state"><div class="icon">◈</div><p>No milestones found</p></div>';
+    document.getElementById('chapterNav').style.display = 'none';
     return;
   }
 
+  // ── Build chapter nav ──────────────────────────────────────────────────
+  const navScroll = document.getElementById('chapterNavScroll');
+  navScroll.innerHTML = '';
+
+  // Determine which chapters have items
+  const chapterHasItems = new Set();
+  for (const m of allItems) {
+    const cid = getChapterId(m);
+    if (cid) chapterHasItems.add(cid);
+  }
+
+  // Render nav chips in chapter order
+  for (const ch of MILESTONE_CHAPTERS) {
+    const hasItems = chapterHasItems.has(ch.id);
+    const chip = document.createElement('div');
+    chip.className = 'chapter-chip' + (hasItems ? '' : ' empty');
+    chip.textContent = ch.label;
+    if (hasItems) {
+      chip.onclick = () => {
+        const header = document.getElementById('ch-' + ch.id);
+        if (header) header.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Highlight active chip
+        navScroll.querySelectorAll('.chapter-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+      };
+    }
+    navScroll.appendChild(chip);
+  }
+  document.getElementById('chapterNav').style.display = 'block';
+
+  // ── Render timeline with chapter headers ───────────────────────────────
+  let currentChapter = null;
+
   allItems.forEach((m, i) => {
+    const chapterId = getChapterId(m);
+
+    // Insert chapter header when entering a new chapter
+    if (chapterId && chapterId !== currentChapter) {
+      currentChapter = chapterId;
+      const label = getChapterLabel(chapterId);
+      if (label) {
+        const header = document.createElement('div');
+        header.id = 'ch-' + chapterId;
+        header.className = 'chapter-header';
+        header.innerHTML = `<span>${label}</span>`;
+        container.appendChild(header);
+      }
+    }
+
     const node = document.createElement('div');
     const isTitle = m.type === 'title';
     const typeClass = isTitle ? 'title' : (m.starred ? 'important' : m.type);
@@ -592,7 +664,6 @@ function renderTimeline() {
     const kd = deaths > 0 ? (kills / deaths).toFixed(2) : kills > 0 ? '∞' : '—';
     const duration = formatDuration(m.values?.activityDurationSeconds?.basic?.value || 0);
 
-    // Title nodes: no stats, no fireteam, just the name and flavour
     if (isTitle) {
       node.innerHTML = `
         <div class="node-header">

@@ -26,6 +26,7 @@ let state = {
   displayName: '',
   displayNameCode: '',
   milestones: [],        // sorted array of first-clear milestone objects
+  titles: [],            // completed title milestones
   currentSlide: 0,
   currentView: 'timeline',
 };
@@ -335,15 +336,22 @@ async function loadJourney(player) {
 
     state.milestones = milestones;
 
+    // ── Fetch completed titles (Seals) ────────────────────────────────────
+    showStatus('Checking titles...', 'info', true);
+    const titleMilestones = await fetchTitles();
+    state.titles = titleMilestones;
+
     // Update summary
     const raidCount = milestones.filter(m => m.type === 'raid').length;
     const dungeonCount = milestones.filter(m => m.type === 'dungeon').length;
     const storyCount = milestones.filter(m => m.type === 'story').length;
+    const titleCount = titleMilestones.length;
 
-    document.getElementById('sumTotal').textContent = milestones.length;
+    document.getElementById('sumTotal').textContent = milestones.length + titleCount;
     document.getElementById('sumRaids').textContent = raidCount;
     document.getElementById('sumDungeons').textContent = dungeonCount;
     document.getElementById('sumStories').textContent = storyCount;
+    document.getElementById('sumTitles').textContent = titleCount;
     document.getElementById('summaryBar').style.display = 'flex';
 
     // Show view toggle
@@ -404,6 +412,7 @@ async function resolveNames(hashes) {
 
 async function prefetchFireteams(milestones) {
   for (const m of milestones) {
+    if (m.type === 'title') continue; // titles have no fireteam
     if (fireteamCache[m.instanceId] !== undefined) continue;
     try {
       const data = await apiFetch(`/Destiny2/Stats/PostGameCarnageReport/${m.instanceId}/`);
@@ -411,6 +420,68 @@ async function prefetchFireteams(milestones) {
       fireteamCache[m.instanceId] = data.Response?.entries || [];
     } catch { fireteamCache[m.instanceId] = []; }
   }
+}
+
+// ── Title fetching ─────────────────────────────────────────────────────────
+// Fetches completed Seals/Titles via Profile components 900 (records) and
+// cross-references with the TITLE_FLAVOUR map to find earned titles.
+// Each title becomes a special "title" type milestone.
+
+async function fetchTitles() {
+  const titles = [];
+  try {
+    // Component 900 = profileRecords (includes seal/title completion data)
+    const data = await apiFetch(
+      `/Destiny2/${state.membershipType}/Profile/${state.membershipId}/?components=900`
+    );
+    if (data.ErrorCode !== 1) return titles;
+
+    const records = data.Response?.profileRecords?.data?.records || {};
+    const recordSeals = data.Response?.profileRecords?.data?.recordSeals || {};
+
+    // recordSeals contains seal completion info keyed by seal hash
+    // Each seal has a "title" property with the display name when completed
+    for (const [sealHash, sealData] of Object.entries(recordSeals)) {
+      if (!sealData.completed) continue;
+
+      // Get the title name from the seal definition
+      let titleName = sealData.title || '';
+      if (!titleName) {
+        // Fallback: try to resolve from the manifest
+        try {
+          const defData = await apiFetch(`/Destiny2/Manifest/DestinyPresentationNodeDefinition/${sealHash}/`);
+          if (defData.ErrorCode === 1 && defData.Response?.displayProperties?.name) {
+            titleName = defData.Response.displayProperties.name;
+          }
+        } catch { /* skip */ }
+      }
+
+      if (!titleName) continue;
+
+      // Check if we have flavour text for this title
+      const flavour = TITLE_FLAVOUR[titleName] || null;
+      if (!flavour) continue; // only include titles we have flavour for
+
+      // Use the completion date if available, otherwise use the seal hash as a stable key
+      const completedDate = sealData.completedDate || sealData.state === 1 ? new Date().toISOString() : null;
+
+      titles.push({
+        refId: `title-${sealHash}`,
+        name: titleName,
+        type: 'title',
+        instanceId: `title-${sealHash}`,
+        period: completedDate || new Date().toISOString(),
+        values: {},
+        characterId: null,
+        starred: true,
+        artwork: null,
+        flavour: flavour,
+      });
+    }
+  } catch (e) {
+    console.warn('Title fetch error:', e);
+  }
+  return titles;
 }
 
 // ── View switching ─────────────────────────────────────────────────────────
@@ -439,14 +510,19 @@ function renderTimeline() {
   container.style.display = 'block';
   container.innerHTML = '';
 
-  if (!state.milestones.length) {
+  // Combine milestones and titles, sorted by date
+  const allItems = [...state.milestones, ...state.titles]
+    .sort((a, b) => new Date(a.period) - new Date(b.period));
+
+  if (!allItems.length) {
     container.innerHTML = '<div class="empty-state"><div class="icon">◈</div><p>No milestones found</p></div>';
     return;
   }
 
-  state.milestones.forEach((m, i) => {
+  allItems.forEach((m, i) => {
     const node = document.createElement('div');
-    const typeClass = m.starred ? 'important' : m.type;
+    const isTitle = m.type === 'title';
+    const typeClass = isTitle ? 'title' : (m.starred ? 'important' : m.type);
     node.className = `timeline-node ${typeClass}`;
     node.style.animationDelay = Math.min(i * 0.02, 0.5) + 's';
 
@@ -454,33 +530,51 @@ function renderTimeline() {
     const dateStr = period.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
     const timeStr = period.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 
-    const typeLabel = m.type === 'raid' ? 'Raid' : m.type === 'dungeon' ? 'Dungeon' : 'Story';
-    const typeClassLabel = m.starred ? 'important' : m.type;
+    let typeLabel, typeClassLabel;
+    if (isTitle) {
+      typeLabel = 'Title';
+      typeClassLabel = 'title';
+    } else {
+      typeLabel = m.type === 'raid' ? 'Raid' : m.type === 'dungeon' ? 'Dungeon' : 'Story';
+      typeClassLabel = m.starred ? 'important' : m.type;
+    }
 
     const kills = Math.round(m.values?.kills?.basic?.value || 0);
     const deaths = Math.round(m.values?.deaths?.basic?.value || 0);
     const kd = deaths > 0 ? (kills / deaths).toFixed(2) : kills > 0 ? '∞' : '—';
     const duration = formatDuration(m.values?.activityDurationSeconds?.basic?.value || 0);
 
-    node.innerHTML = `
-      <div class="node-header">
-        <div class="node-type ${typeClassLabel}">${m.starred ? '★ Important' : typeLabel}</div>
-        <div class="node-name">${m.name}</div>
-        <div class="node-date">${dateStr} · ${timeStr}</div>
-      </div>
-      <div class="node-meta">
-        <span>⏱ ${duration}</span>
-        <span>⚔ ${kills} kills</span>
-        <span>💀 ${deaths} deaths</span>
-        <span>📊 ${kd} K/D</span>
-      </div>
-      ${m.flavour ? `<div class="node-flavour">${m.flavour}</div>` : ''}
-      <div class="fireteam-panel">
-        <div class="fireteam-loading"><div class="spinner"></div>Loading fireteam...</div>
-      </div>
-    `;
+    // Title nodes: no stats, no fireteam, just the name and flavour
+    if (isTitle) {
+      node.innerHTML = `
+        <div class="node-header">
+          <div class="node-type title">🏆 Title</div>
+          <div class="node-name">${m.name}</div>
+          <div class="node-date">${dateStr}</div>
+        </div>
+        ${m.flavour ? `<div class="node-flavour">${m.flavour}</div>` : ''}
+      `;
+    } else {
+      node.innerHTML = `
+        <div class="node-header">
+          <div class="node-type ${typeClassLabel}">${m.starred ? '★ Important' : typeLabel}</div>
+          <div class="node-name">${m.name}</div>
+          <div class="node-date">${dateStr} · ${timeStr}</div>
+        </div>
+        <div class="node-meta">
+          <span>⏱ ${duration}</span>
+          <span>⚔ ${kills} kills</span>
+          <span>💀 ${deaths} deaths</span>
+          <span>📊 ${kd} K/D</span>
+        </div>
+        ${m.flavour ? `<div class="node-flavour">${m.flavour}</div>` : ''}
+        <div class="fireteam-panel">
+          <div class="fireteam-loading"><div class="spinner"></div>Loading fireteam...</div>
+        </div>
+      `;
+      node.onclick = () => toggleTimelineNode(node, m.instanceId);
+    }
 
-    node.onclick = () => toggleTimelineNode(node, m.instanceId);
     container.appendChild(node);
   });
 }

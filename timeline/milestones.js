@@ -591,3 +591,90 @@ const MILESTONE_ARTWORK = {
   // ── Important Story Missions ────────────────────────────────────────────
 
 };
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Title Flavour Text
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Map of title name → flavour text.
+   Titles (Seals) are earned by completing all associated Triumphs.
+   Displayed as special milestone nodes in both timeline and slideshow views.
+
+   Source: Bungie API DestinyRecordDefinition / DestinyPresentationNodeDefinition
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const TITLE_FLAVOUR = {
+
+  // ── Forsaken Era ────────────────────────────────────────────────────────
+  'Dredgen': 'You walked the line between Light and Dark. The Drifter saw something in you — and gave you a name.',
+  'Wayfarer': 'You charted every corner of the system. No destination was too remote, no secret too well hidden.',
+  'Cursebreaker': 'You broke the curse of the Dreaming City — or at least, you proved you could. The Awoken remember.',
+  'Rivensbane': 'You slew Riven legitimately. No cheese, no shortcuts. The Last Wish was truly your last.',
+  'Chronicler': 'You gathered every scrap of lore. The story of the Light and Darkness is now yours to tell.',
+  'Blacksmith': 'You forged every weapon of the Black Armory. Ada-1\'s legacy lives on through you.',
+  'Reckoner': 'You mastered Gambit Prime in all its forms. The Drifter still talks about you.',
+  'Shadow': 'You became a Shadow of Calus. The Emperor\'s favour was yours — for a time.',
+  'Unbroken': 'You reached Legend rank in the Crucible — three times. Your name is etched in competitive history.',
+  'MMXIX': 'You were there when it mattered. The Moments of Triumph of 2019 are yours.',
+
+  // ── Shadowkeep Era ──────────────────────────────────────────────────────
+  'Undying': 'You stopped the Vex invasion of the Moon. The Undying Mind fell — again and again.',
+  'Savior': 'You saved Saint-14 from the Corridors of Time. The greatest Titan who ever lived owes you everything.',
+  'Almighty': 'You watched the Almighty fall from the sky. Rasputin\'s vengeance was absolute.',
+  'Forerunner': 'You stood against the Pyramids when they first arrived. You were the first line of defence.',
+  'MMXX': 'You rose to every challenge 2020 threw at you. The Darkness arrived — and you were ready.',
+
+  // ── Beyond Light Era ────────────────────────────────────────────────────
+  'Warden': 'You mastered the Hunts of the Tangled Shore. Xivu Arath\'s Celebrant fell to your blade.',
+  'Chosen': 'You proved yourself to Empress Caiatl. The Cabal respect strength — and you have it.',
+  'Splicer': 'You became a Sacred Splicer. The Vex network opened to you, and Quria was destroyed.',
+  'Descendant': 'You mastered the Deep Stone Crypt. The secrets of Clovis Bray are yours.',
+  'Fatebreaker': 'You conquered the Vault of Glass once more. Time itself bends to your will.',
+  'Realmwalker': 'You walked the Shattered Realms and freed the Techeuns. The Ley Lines answer to you.',
+  'MMXXI': 'You stood tall through another year. The Witch Queen\'s arrival was imminent — and you were ready.',
+
+  // ── The Witch Queen Era ─────────────────────────────────────────────────
+  'Disciple-Slayer': 'You defeated Rhulk, the First Disciple. The Witness\'s oldest servant fell in his own Pyramid.',
+  'Gumshoe': 'You solved every mystery of the Throne World. No secret of Savathûn escaped your notice.',
+  'Risen': 'You proved yourself in the new era of Light-wielding Hive. The Lucent Brood learned to fear you.',
+  'Reaper': 'You became the Reaper aboard the Derelict Leviathan. The Nightmares were laid to rest.',
+  'Scallywag': 'You sailed the spaceways as a pirate. The relics of Nezarec were gathered — for better or worse.',
+  'Seraph': 'You helped Rasputin achieve his final sacrifice. The Warsats fell, and the Warmind was reborn.',
+  'Kingslayer': 'You slew the Taken King once more. Oryx fell again — this time for good.',
+  'MMXXII': 'You conquered the trials of 2022. The Witness drew closer — and you grew stronger.',
+
+  // ── Lightfall Era ───────────────────────────────────────────────────────
+  'Queensguard': 'You became Mara Sov\'s Queensguard. The Awoken Queen trusts you with her life.',
+  'Aquanaut': 'You explored the depths of Titan\'s methane ocean. The secrets of the deep are yours.',
+  'Haruspex': 'You mastered the arcane arts of the Hive. The Witch Queen\'s rituals are yours to command.',
+  'Wishbearer': 'You bore the final wish of the Ahamkara. Riven\'s last bargain was honoured.',
+  'Dream Warrior': 'You conquered the Root of Nightmares. The Witness\'s disciple fell in the heart of the Traveler.',
+  'Ghoul': 'You mastered the Ghosts of the Deep. The Hive\'s darkest secrets were brought to light.',
+  'Swordbearer': 'You bore the sword against Crota once more. The Son of Oryx fell again.',
+  'Star Baker': 'You proved yourself the Star Baker. Even in darkness, you found time for celebration.',
+  'MMXXIII': 'You faced the arrival of the Witness. 2023 was the year everything changed.',
+
+  // ── The Final Shape Era ─────────────────────────────────────────────────
+  'Iconoclast': 'You broke the Witness\'s hold on the Traveler. The Light and Darkness Saga ended with you.',
+  'Slayer Baron': 'You became a Slayer Baron. The Revenant\'s forces fell before your fireteam.',
+  'Harbinger': 'You became the Harbinger of a new age. The Echoes of the past guide your path.',
+  'Heretic': 'You walked the path of heresy. The old ways crumbled — and you built something new.',
+  'Intrepid': 'You explored the farthest reaches of the Oort Cloud. Kepler\'s secrets are yours.',
+  'MMXXIV': 'You witnessed the end of an era. The Final Shape was achieved — and you were there.',
+
+  // ── The Edge of Fate / Renegades Era ────────────────────────────────────
+  'Pathfinder': 'You blazed a trail through the unknown. The frontier of Kepler is yours to chart.',
+  'Renegade': 'You became a Renegade. The old rules don\'t apply to you anymore.',
+  'Outlander': 'You ventured beyond the system\'s edge. What you found will define the future.',
+  'MMXXV': 'You stood at the edge of fate. 2025 was the year of new frontiers.',
+  'MMXXVI': 'You carry the torch into a new age. The journey continues.',
+
+  // ── Event Titles ────────────────────────────────────────────────────────
+  'Flamekeeper': 'You kept the flame of the Bonfire Bash. The Solstice remembers your light.',
+  'Ghost Writer': 'You wrote your legend during the Festival of the Lost. The masks can\'t hide your achievements.',
+  'Star Baker': 'You baked your way into Dawning history. Even Eva Levante is impressed.',
+  'Champ': 'You proved yourself the Champion of the Guardian Games. Your class stands above the rest.',
+  'Reveler': 'You revelled in every seasonal celebration. The Tower\'s festivities are yours to command.',
+  'Iron Lord': 'You became an Iron Lord. The wolves of the Iron Banner answer to you now.',
+
+};

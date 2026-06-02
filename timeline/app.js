@@ -343,6 +343,13 @@ async function loadJourney(player) {
     const milestones = [];
     for (const [refId, act] of firstClears) {
       const name = nameCache[refId] || 'Unknown Activity';
+      const isImportant = isImportantStory(name, refId);
+
+      // Always include raids and dungeons. Story missions must be in the
+      // IMPORTANT_STORY_MISSIONS set — this is about the first time you
+      // played through the game, not every replay.
+      if (act._type === 'story' && !isImportant) continue;
+
       milestones.push({
         refId,
         name,
@@ -351,7 +358,7 @@ async function loadJourney(player) {
         period: act.period,
         values: act.values || {},
         characterId: act._characterId,
-        starred: isImportantStory(name, refId),
+        starred: isImportant,
         artwork: getArtwork(name),
         flavour: getFlavour(name),
       });

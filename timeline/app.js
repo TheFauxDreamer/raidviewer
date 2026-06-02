@@ -70,6 +70,12 @@ function getArtwork(name) {
   return path || null;
 }
 
+// ── Flavour text (from milestones.js) ─────────────────────────────────────
+// Looks up flavour text by activity name in the shared MILESTONE_FLAVOUR map.
+function getFlavour(name) {
+  return MILESTONE_FLAVOUR[name] || null;
+}
+
 // ── Important story missions (from milestones.js) ─────────────────────────
 // Checks the shared IMPORTANT_STORY_MISSIONS set by activity name.
 // Also falls back to checking by referenceId hash for edge cases.
@@ -320,6 +326,7 @@ async function loadJourney(player) {
         characterId: act._characterId,
         starred: isImportantStory(name, refId),
         artwork: getArtwork(name),
+        flavour: getFlavour(name),
       });
     }
 
@@ -467,6 +474,7 @@ function renderTimeline() {
         <span>💀 ${deaths} deaths</span>
         <span>📊 ${kd} K/D</span>
       </div>
+      ${m.flavour ? `<div class="node-flavour">${m.flavour}</div>` : ''}
       <div class="fireteam-panel">
         <div class="fireteam-loading"><div class="spinner"></div>Loading fireteam...</div>
       </div>
@@ -647,6 +655,7 @@ function renderSlide(index) {
         <span>💀 ${deaths} deaths</span>
         <span>📊 ${kd} K/D</span>
       </div>
+      ${m.flavour ? `<div class="slide-flavour">${m.flavour}</div>` : ''}
       ${fireteamHtml}
     </div>
   `;

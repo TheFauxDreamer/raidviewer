@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Star Chart — Destiny 2 Timeline</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <div class="container">
+
+    <header>
+      <svg class="star-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="24" cy="24" r="22" fill="none" stroke="#c8d8f0" stroke-width="0.5" opacity="0.3" />
+        <circle cx="24" cy="24" r="16" fill="none" stroke="#5b9bd5" stroke-width="0.5" opacity="0.2" />
+        <circle cx="24" cy="24" r="8" fill="none" stroke="#d4af37" stroke-width="0.5" opacity="0.3" />
+        <line x1="24" y1="2" x2="24" y2="8" stroke="#c8d8f0" stroke-width="0.5" opacity="0.4" />
+        <line x1="24" y1="40" x2="24" y2="46" stroke="#c8d8f0" stroke-width="0.5" opacity="0.4" />
+        <line x1="2" y1="24" x2="8" y2="24" stroke="#c8d8f0" stroke-width="0.5" opacity="0.4" />
+        <line x1="40" y1="24" x2="46" y2="24" stroke="#c8d8f0" stroke-width="0.5" opacity="0.4" />
+        <circle cx="24" cy="24" r="3" fill="#d4af37" opacity="0.8" />
+        <circle cx="24" cy="24" r="1.5" fill="#ffffff" />
+      </svg>
+      <h1>Star Chart</h1>
+      <p>Destiny 2 · Your Journey Through the Stars</p>
+    </header>
+
+    <!-- ── Search ────────────────────────────────────────────────────────── -->
+    <div class="search-section">
+      <div class="search-label">Find Your Guardian</div>
+      <div class="search-row">
+        <input type="text" id="searchInput" placeholder="BungieName or BungieName#1234"
+          onkeydown="if(event.key==='Enter') search()" />
+        <button id="searchBtn" onclick="search()">Search</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;font-family:'Share Tech Mono',monospace;">
+        Search by name alone or include #code for exact match
+      </div>
+    </div>
+
+    <div class="status-bar" id="statusBar">
+      <div class="spinner" id="statusSpinner" style="display:none"></div>
+      <span id="statusText"></span>
+    </div>
+
+    <div class="results-list" id="resultsList"></div>
+
+    <!-- ── Guardian header ───────────────────────────────────────────────── -->
+    <div class="guardian-header" id="guardianHeader">
+      <div class="guardian-name" id="guardianName"></div>
+      <div class="guardian-code" id="guardianCode"></div>
+    </div>
+
+    <!-- ── View toggle ───────────────────────────────────────────────────── -->
+    <div class="view-toggle" id="viewToggle">
+      <button class="view-btn active" id="timelineViewBtn" onclick="switchView('timeline')">◈ Timeline</button>
+      <button class="view-btn" id="slideshowViewBtn" onclick="switchView('slideshow')">◆ Slideshow</button>
+    </div>
+
+    <!-- ── Summary bar ───────────────────────────────────────────────────── -->
+    <div class="summary-bar" id="summaryBar">
+      <div class="summary-stat">
+        <div class="summary-val" id="sumTotal">—</div>
+        <div class="summary-lbl">Milestones</div>
+      </div>
+      <div class="summary-stat">
+        <div class="summary-val" id="sumRaids">—</div>
+        <div class="summary-lbl">Raids</div>
+      </div>
+      <div class="summary-stat">
+        <div class="summary-val" id="sumDungeons">—</div>
+        <div class="summary-lbl">Dungeons</div>
+      </div>
+      <div class="summary-stat">
+        <div class="summary-val" id="sumStories">—</div>
+        <div class="summary-lbl">Story Missions</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- TIMELINE VIEW -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div class="timeline" id="timelineView"></div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- SLIDESHOW VIEW -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div class="slideshow" id="slideshowView">
+      <div class="slide active" id="slideContainer"></div>
+      <div class="slideshow-nav">
+        <button class="secondary small" onclick="prevSlide()">◂ Previous</button>
+        <span class="slide-counter" id="slideCounter">1 / 1</span>
+        <button class="secondary small" onclick="nextSlide()">Next ▸</button>
+      </div>
+      <div class="slide-dots" id="slideDots"></div>
+    </div>
+
+    <!-- ── Empty state ───────────────────────────────────────────────────── -->
+    <div class="empty-state" id="emptyState">
+      <div class="icon">◈</div>
+      <p>Search for a guardian to chart their journey</p>
+    </div>
+
+  </div>
+
+  <script src="milestones.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>

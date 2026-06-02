@@ -342,7 +342,10 @@ async function loadJourney(player) {
     // Build milestones array
     const milestones = [];
     for (const [refId, act] of firstClears) {
-      const name = nameCache[refId] || 'Unknown Activity';
+      const name = nameCache[refId];
+      // Skip activities whose name couldn't be resolved
+      if (!name || name === 'Unknown Activity') continue;
+
       const isImportant = isImportantStory(name, refId);
 
       // Always include raids and dungeons. Story missions must be in the
@@ -367,7 +370,19 @@ async function loadJourney(player) {
     // Sort by date
     milestones.sort((a, b) => new Date(a.period) - new Date(b.period));
 
-    state.milestones = milestones;
+    // ── Deduplicate by name ───────────────────────────────────────────────
+    // Different difficulty variants (Normal/Legendary) have different
+    // referenceId hashes but the same display name. Keep only the earliest
+    // completion for each unique name.
+    const seenNames = new Set();
+    const deduped = [];
+    for (const m of milestones) {
+      if (seenNames.has(m.name)) continue;
+      seenNames.add(m.name);
+      deduped.push(m);
+    }
+
+    state.milestones = deduped;
 
     // ── Fetch completed titles (Seals) ────────────────────────────────────
     showStatus('Checking titles...', 'info', true);
@@ -809,6 +824,44 @@ function nextSlide() {
 
 function goToSlide(index) {
   renderSlide(index);
+}
+
+// ── Export ─────────────────────────────────────────────────────────────────
+
+function exportData() {
+  const allItems = [...state.milestones, ...state.titles]
+    .sort((a, b) => new Date(a.period) - new Date(b.period));
+
+  const rows = allItems.map(m => ({
+    name: m.name,
+    type: m.type,
+    date: new Date(m.period).toISOString(),
+    instanceId: m.instanceId,
+    refId: m.refId,
+    starred: m.starred,
+    flavour: m.flavour || '',
+    kills: Math.round(m.values?.kills?.basic?.value || 0),
+    deaths: Math.round(m.values?.deaths?.basic?.value || 0),
+    durationSeconds: m.values?.activityDurationSeconds?.basic?.value || 0,
+  }));
+
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    guardian: state.displayName + '#' + String(state.displayNameCode).padStart(4, '0'),
+    membershipId: state.membershipId,
+    membershipType: state.membershipType,
+    totalMilestones: state.milestones.length,
+    totalTitles: state.titles.length,
+    milestones: rows,
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `starchart-${state.displayName}-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ── Keyboard navigation for slideshow ──────────────────────────────────────

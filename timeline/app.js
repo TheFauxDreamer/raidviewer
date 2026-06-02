@@ -593,6 +593,13 @@ const _chapterLookup = {};
     for (const name of ch.missions) {
       _chapterLookup[name] = ch.id;
     }
+    if (ch.children) {
+      for (const child of ch.children) {
+        for (const name of child.missions) {
+          _chapterLookup[name] = child.id;
+        }
+      }
+    }
   }
 })();
 
@@ -603,8 +610,15 @@ function getChapterId(milestone) {
 }
 
 function getChapterLabel(chapterId) {
-  const ch = MILESTONE_CHAPTERS.find(c => c.id === chapterId);
-  return ch ? ch.label : null;
+  for (const ch of MILESTONE_CHAPTERS) {
+    if (ch.id === chapterId) return ch.label;
+    if (ch.children) {
+      for (const child of ch.children) {
+        if (child.id === chapterId) return child.label;
+      }
+    }
+  }
+  return null;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -625,7 +639,8 @@ function renderTimeline() {
     return;
   }
 
-  // ── Build chapter nav ──────────────────────────────────────────────────
+  // ── Build two-tier chapter nav ────────────────────────────────────────
+  const navContainer = document.getElementById('chapterNav');
   const navScroll = document.getElementById('chapterNavScroll');
   navScroll.innerHTML = '';
 
@@ -636,24 +651,75 @@ function renderTimeline() {
     if (cid) chapterHasItems.add(cid);
   }
 
-  // Render nav chips in chapter order
+  // Tier 1: DLC chips
+  const tier1 = document.createElement('div');
+  tier1.className = 'chapter-tier tier-1';
+
+  let activeParent = null;
+
   for (const ch of MILESTONE_CHAPTERS) {
-    const hasItems = chapterHasItems.has(ch.id);
+    const hasOwnItems = chapterHasItems.has(ch.id);
+    const childHasItems = ch.children && ch.children.some(c => chapterHasItems.has(c.id));
+    const hasItems = hasOwnItems || childHasItems;
+
     const chip = document.createElement('div');
     chip.className = 'chapter-chip' + (hasItems ? '' : ' empty');
     chip.textContent = ch.label;
+    chip.dataset.chapterId = ch.id;
+
     if (hasItems) {
       chip.onclick = () => {
-        const header = document.getElementById('ch-' + ch.id);
-        if (header) header.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        // Highlight active chip
-        navScroll.querySelectorAll('.chapter-chip').forEach(c => c.classList.remove('active'));
+        // Toggle children row
+        if (activeParent === ch.id) {
+          activeParent = null;
+        } else {
+          activeParent = ch.id;
+        }
+        renderTier2(ch.id, activeParent === ch.id ? ch : null);
+        // Highlight
+        tier1.querySelectorAll('.chapter-chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
+
+        // Scroll to chapter header
+        if (activeParent === ch.id && hasOwnItems) {
+          const header = document.getElementById('ch-' + ch.id);
+          if (header) header.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
       };
     }
-    navScroll.appendChild(chip);
+    tier1.appendChild(chip);
   }
-  document.getElementById('chapterNav').style.display = 'block';
+  navScroll.appendChild(tier1);
+
+  // Tier 2 container (populated dynamically)
+  const tier2 = document.createElement('div');
+  tier2.className = 'chapter-tier tier-2';
+  tier2.id = 'tier2Chips';
+  navScroll.appendChild(tier2);
+
+  function renderTier2(parentId, parentCh) {
+    tier2.innerHTML = '';
+    if (!parentCh || !parentCh.children) return;
+
+    for (const child of parentCh.children) {
+      const hasItems = chapterHasItems.has(child.id);
+      const chip = document.createElement('div');
+      chip.className = 'chapter-chip chapter-chip-child' + (hasItems ? '' : ' empty');
+      chip.textContent = child.label;
+      chip.dataset.chapterId = child.id;
+      if (hasItems) {
+        chip.onclick = () => {
+          tier2.querySelectorAll('.chapter-chip').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          const header = document.getElementById('ch-' + child.id);
+          if (header) header.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+      }
+      tier2.appendChild(chip);
+    }
+  }
+
+  navContainer.style.display = 'block';
 
   // ── Render timeline with chapter headers ───────────────────────────────
   let currentChapter = null;

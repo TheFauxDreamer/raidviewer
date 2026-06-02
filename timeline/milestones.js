@@ -689,6 +689,9 @@ const TITLE_FLAVOUR = {
 
    Chapters appear in the order defined here.  Missions not listed in any
    chapter are grouped under "Other".
+
+   Each chapter can have children (seasons/episodes).  The nav shows DLCs
+   in the top row; clicking one reveals its children in the second row.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const MILESTONE_CHAPTERS = [
@@ -725,29 +728,31 @@ const MILESTONE_CHAPTERS = [
       'Nothing Left to Say', 'A Hum of Starlight', 'Awakening',
       'Broken Courier', 'The Oracle Engine', 'Dark Monastery',
     ],
-  },
-  {
-    id: 'forge',
-    label: 'Season of the Forge',
-    missions: ['Scourge of the Armory', 'Origin: Nessus', 'Rekindle the Flames', 'Niobe\'s Torment'],
-  },
-  {
-    id: 'dawn',
-    label: 'Season of Dawn',
-    missions: ['Corridors of Time Part 1', 'Corridors of Time Part 2', 'Open the Gate'],
-  },
-  {
-    id: 'worthy',
-    label: 'Season of the Worthy',
-    missions: [
-      'Into the Mindlab', 'Boot Sector', 'Lunar Connection',
-      'Expand and Collapse', 'A Warmind\'s Secrets', 'The Tyrant',
+    children: [
+      {
+        id: 'forge',
+        label: 'Forge',
+        missions: ['Scourge of the Armory', 'Origin: Nessus', 'Rekindle the Flames', 'Niobe\'s Torment'],
+      },
+      {
+        id: 'dawn',
+        label: 'Dawn',
+        missions: ['Corridors of Time Part 1', 'Corridors of Time Part 2', 'Open the Gate'],
+      },
+      {
+        id: 'worthy',
+        label: 'Worthy',
+        missions: [
+          'Into the Mindlab', 'Boot Sector', 'Lunar Connection',
+          'Expand and Collapse', 'A Warmind\'s Secrets', 'The Tyrant',
+        ],
+      },
+      {
+        id: 'arrivals',
+        label: 'Arrivals',
+        missions: ['A Shadow Overhead', 'Interference'],
+      },
     ],
-  },
-  {
-    id: 'arrivals',
-    label: 'Season of Arrivals',
-    missions: ['A Shadow Overhead', 'Interference'],
   },
   {
     id: 'shadowkeep',
@@ -756,11 +761,13 @@ const MILESTONE_CHAPTERS = [
       'A Mysterious Disturbance', 'In Search of Answers',
       'The Scarlet Keep', 'In the Deep', 'Beyond',
     ],
-  },
-  {
-    id: 'hunt',
-    label: 'Season of the Hunt',
-    missions: ['Trail of the Hunted', 'Cry from Beyond', 'The Crow and the Hawk', 'Coup de Grâce'],
+    children: [
+      {
+        id: 'hunt',
+        label: 'Hunt',
+        missions: ['Trail of the Hunted', 'Cry from Beyond', 'The Crow and the Hawk', 'Coup de Grâce'],
+      },
+    ],
   },
   {
     id: 'beyond-light',
@@ -771,30 +778,32 @@ const MILESTONE_CHAPTERS = [
       'The Kell of Darkness', 'Sabotaging Salvation', 'The Aftermath',
       'The Dark Priestess',
     ],
-  },
-  {
-    id: 'chosen',
-    label: 'Season of the Chosen',
-    missions: [
-      'Battleground: Behemoth', 'Battleground: Hailstone',
-      'Battleground: Foothold', 'Battleground: Oracle', 'Proving Grounds',
-    ],
-  },
-  {
-    id: 'splicer',
-    label: 'Season of the Splicer',
-    missions: [
-      'The Lost Splicer', 'Expunge: Labyrinth', 'Expunge: Styx',
-      'Expunge: Tartarus', 'Expunge: Delphi',
-    ],
-  },
-  {
-    id: 'lost',
-    label: 'Season of the Lost',
-    missions: [
-      'Cocoon', 'Shattered Realm: Forest of Echoes',
-      'Shattered Realm: Debris of Dreams', 'Shattered Realm: Ruins of Wrath',
-      'Exorcism',
+    children: [
+      {
+        id: 'chosen',
+        label: 'Chosen',
+        missions: [
+          'Battleground: Behemoth', 'Battleground: Hailstone',
+          'Battleground: Foothold', 'Battleground: Oracle', 'Proving Grounds',
+        ],
+      },
+      {
+        id: 'splicer',
+        label: 'Splicer',
+        missions: [
+          'The Lost Splicer', 'Expunge: Labyrinth', 'Expunge: Styx',
+          'Expunge: Tartarus', 'Expunge: Delphi',
+        ],
+      },
+      {
+        id: 'lost',
+        label: 'Lost',
+        missions: [
+          'Cocoon', 'Shattered Realm: Forest of Echoes',
+          'Shattered Realm: Debris of Dreams', 'Shattered Realm: Ruins of Wrath',
+          'Exorcism',
+        ],
+      },
     ],
   },
   {
@@ -805,34 +814,36 @@ const MILESTONE_CHAPTERS = [
       'The Mirror', 'The Cunning', 'The Last Chance', 'The Ritual',
       'Preservation',
     ],
-  },
-  {
-    id: 'haunted',
-    label: 'Season of the Haunted',
-    missions: [
-      'Operation: Midas', 'Sever - Shame', 'Sever - Reconciliation',
-      'Sever - Grief', 'Sever - Forgiveness', 'Sever - Rage',
-      'Sever - Resolve', 'Catharsis',
-    ],
-  },
-  {
-    id: 'plunder',
-    label: 'Season of Plunder',
-    missions: [
-      'Salvage and Salvation', 'Pirate Hideout: The Brute',
-      'Pirate Hideout: The Sharpshooter', 'Pirate Hideout: The Blademasters',
-      'Pirate Hideout: The Beast Tamer', 'Pirate Hideout: The Bully',
-      'Pirate Hideout: The Coward', 'Pirate Hideout: The Scrapworker',
-      'Pirate Hideout: The Lucent Brood',
-    ],
-  },
-  {
-    id: 'seraph',
-    label: 'Season of the Seraph',
-    missions: [
-      'Hierarchy', 'Operation: Archimedes', 'Operation: Diocles',
-      'Operation: Seraph\'s Shield', 'Operation: Son of Saturn',
-      'Operation: Sancus', 'ABHORRENT IMPERATIVE',
+    children: [
+      {
+        id: 'haunted',
+        label: 'Haunted',
+        missions: [
+          'Operation: Midas', 'Sever - Shame', 'Sever - Reconciliation',
+          'Sever - Grief', 'Sever - Forgiveness', 'Sever - Rage',
+          'Sever - Resolve', 'Catharsis',
+        ],
+      },
+      {
+        id: 'plunder',
+        label: 'Plunder',
+        missions: [
+          'Salvage and Salvation', 'Pirate Hideout: The Brute',
+          'Pirate Hideout: The Sharpshooter', 'Pirate Hideout: The Blademasters',
+          'Pirate Hideout: The Beast Tamer', 'Pirate Hideout: The Bully',
+          'Pirate Hideout: The Coward', 'Pirate Hideout: The Scrapworker',
+          'Pirate Hideout: The Lucent Brood',
+        ],
+      },
+      {
+        id: 'seraph',
+        label: 'Seraph',
+        missions: [
+          'Hierarchy', 'Operation: Archimedes', 'Operation: Diocles',
+          'Operation: Seraph\'s Shield', 'Operation: Son of Saturn',
+          'Operation: Sancus', 'ABHORRENT IMPERATIVE',
+        ],
+      },
     ],
   },
   {
@@ -844,35 +855,37 @@ const MILESTONE_CHAPTERS = [
       'Partition: Hard Reset', 'Partition: Backdoor', 'Partition: Ordnance',
       'Parting the Veil',
     ],
-  },
-  {
-    id: 'defiance',
-    label: 'Season of Defiance',
-    missions: [
-      'Mission: Jailbreak', 'Defiant Battleground: EDZ',
-      'Defiant Battleground: Cosmodrome', 'Defiant Battleground: Orbital Prison',
-      'Mission: Retribution',
-    ],
-  },
-  {
-    id: 'deep',
-    label: 'Season of the Deep',
-    missions: [
-      'The Descent', 'Operation Thunderbolt (Twilight)',
-      'Mayday, Mayday (Midnight)', 'Operation Fulgurite (Abyss)', 'Barotrauma',
-    ],
-  },
-  {
-    id: 'witch',
-    label: 'Season of the Witch',
-    missions: ['Way of the Witch', 'Mission: Invoke', 'Mission: Conjure', 'Mission: Sunder'],
-  },
-  {
-    id: 'wish',
-    label: 'Season of the Wish',
-    missions: [
-      'Final Wish', 'Polysemy', 'Tautology', 'Enthymeme', 'Apophasis',
-      'Synchysis', 'Chiasmus', 'Final Words', 'Closer to the Heart',
+    children: [
+      {
+        id: 'defiance',
+        label: 'Defiance',
+        missions: [
+          'Mission: Jailbreak', 'Defiant Battleground: EDZ',
+          'Defiant Battleground: Cosmodrome', 'Defiant Battleground: Orbital Prison',
+          'Mission: Retribution',
+        ],
+      },
+      {
+        id: 'deep',
+        label: 'Deep',
+        missions: [
+          'The Descent', 'Operation Thunderbolt (Twilight)',
+          'Mayday, Mayday (Midnight)', 'Operation Fulgurite (Abyss)', 'Barotrauma',
+        ],
+      },
+      {
+        id: 'witch',
+        label: 'Witch',
+        missions: ['Way of the Witch', 'Mission: Invoke', 'Mission: Conjure', 'Mission: Sunder'],
+      },
+      {
+        id: 'wish',
+        label: 'Wish',
+        missions: [
+          'Final Wish', 'Polysemy', 'Tautology', 'Enthymeme', 'Apophasis',
+          'Synchysis', 'Chiasmus', 'Final Words', 'Closer to the Heart',
+        ],
+      },
     ],
   },
   {
@@ -882,26 +895,28 @@ const MILESTONE_CHAPTERS = [
       'Transmigration', 'Temptation', 'Exegesis', 'Requiem', 'Ascent',
       'Dissent', 'Iconoclasm', 'Excision',
     ],
-  },
-  {
-    id: 'echoes',
-    label: 'Episode: Echoes',
-    missions: ['Mission: Meteoric', 'Mission: Mesmerize', 'Mission: Shell', 'Encore'],
-  },
-  {
-    id: 'revenant',
-    label: 'Episode: Revenant',
-    missions: ['Na-Veskirisk', 'Something Left to Say', 'Captive Memories', 'Kell\'s Fall'],
-  },
-  {
-    id: 'heresy',
-    label: 'Episode: Heresy',
-    missions: ['Espial', 'Recce', 'Kludge', 'Renascence', 'Mission Captis', 'Appellation', 'Resile'],
-  },
-  {
-    id: 'reclamation',
-    label: 'Reclamation',
-    missions: ['Ash & Iron: Initialize'],
+    children: [
+      {
+        id: 'echoes',
+        label: 'Echoes',
+        missions: ['Mission: Meteoric', 'Mission: Mesmerize', 'Mission: Shell', 'Encore'],
+      },
+      {
+        id: 'revenant',
+        label: 'Revenant',
+        missions: ['Na-Veskirisk', 'Something Left to Say', 'Captive Memories', 'Kell\'s Fall'],
+      },
+      {
+        id: 'heresy',
+        label: 'Heresy',
+        missions: ['Espial', 'Recce', 'Kludge', 'Renascence', 'Mission Captis', 'Appellation', 'Resile'],
+      },
+      {
+        id: 'reclamation',
+        label: 'Reclamation',
+        missions: ['Ash & Iron: Initialize'],
+      },
+    ],
   },
   {
     id: 'edge-of-fate',

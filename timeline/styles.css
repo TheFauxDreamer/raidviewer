@@ -22,6 +22,27 @@
   --constellation: rgba(91, 155, 213, 0.15);
 }
 
+/* ── Light mode ─────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --space: #f0f2f5;
+  --void: #e8eaef;
+  --star: #1a2540;
+  --star-dim: #6a7898;
+  --accent: #b8921e;
+  --accent-glow: rgba(184, 146, 30, 0.2);
+  --blue: #3a7ab5;
+  --blue-glow: rgba(58, 122, 181, 0.15);
+  --purple: #7a5fb4;
+  --red: #b44a4a;
+  --green: #3a9a5a;
+  --text: #1a2230;
+  --muted: #6a7898;
+  --border: #c8cdd8;
+  --surface: #ffffff;
+  --surface2: #f5f6f8;
+  --constellation: rgba(58, 122, 181, 0.1);
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
@@ -85,6 +106,15 @@ body::after {
   z-index: 0;
 }
 
+/* ── Light mode: dim star field, hide nebula ───────────────────────────── */
+[data-theme="light"] body::before {
+  opacity: 0.25;
+}
+
+[data-theme="light"] body::after {
+  display: none;
+}
+
 .container {
   position: relative;
   z-index: 1;
@@ -134,6 +164,33 @@ header p {
   letter-spacing: 0.25em;
   text-transform: uppercase;
   color: var(--muted);
+}
+
+/* ── Theme toggle ──────────────────────────────────────────────────────── */
+.theme-toggle {
+  position: absolute;
+  top: 12px;
+  right: 0;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  padding: 0;
+  line-height: 1;
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
 }
 
 /* ── Search ─────────────────────────────────────────────────────────────── */

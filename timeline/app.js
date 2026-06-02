@@ -39,6 +39,32 @@ const fireteamCache = {};
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
+// ── Theme ──────────────────────────────────────────────────────────────────
+function initTheme() {
+  const saved = localStorage.getItem('starChart_theme');
+  if (saved === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.getElementById('themeToggle').textContent = '☾';
+  }
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'light' ? null : 'light';
+  if (next) {
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.getElementById('themeToggle').textContent = '☾';
+    localStorage.setItem('starChart_theme', 'light');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    document.getElementById('themeToggle').textContent = '☀';
+    localStorage.setItem('starChart_theme', 'dark');
+  }
+}
+
+// Call on load
+initTheme();
+
 function isActualClear(values) {
   const completed = (values?.completed?.basic?.value ?? 0) === 1;
   const completionReason = values?.completionReason?.basic?.value ?? 0;

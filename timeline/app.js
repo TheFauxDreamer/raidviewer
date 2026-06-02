@@ -253,9 +253,9 @@ async function loadJourney(player) {
   document.getElementById('emptyState').style.display = 'none';
 
   try {
-    // Get characters
+    // Get characters AND titles in one call (components 200 + 900)
     const profileData = await apiFetch(
-      `/Destiny2/${state.membershipType}/Profile/${state.membershipId}/?components=200`
+      `/Destiny2/${state.membershipType}/Profile/${state.membershipId}/?components=200,900`
     );
     if (profileData.ErrorCode !== 1) {
       showStatus('Error loading profile: ' + (profileData.Message || 'unknown'), 'error', false);
@@ -269,45 +269,27 @@ async function loadJourney(player) {
     }
 
     // Fetch all activities: mode 4 (Raid), mode 82 (Dungeon), mode 2 (Story)
-    const seen = new Set();
-    const allActivities = [];
-
+    // Run all character/mode combinations in parallel for speed
+    showStatus('Scanning activities...', 'info', true);
+    const fetchTasks = [];
     for (const char of chars) {
       const charId = char.characterId;
-      const className = ({ 0: 'Titan', 1: 'Hunter', 2: 'Warlock' })[char.classType] || 'Guardian';
+      fetchTasks.push(
+        fetchAllPages(4, charId).then(acts => acts.map(a => ({ ...a, _type: 'raid', _characterId: charId }))),
+        fetchAllPages(82, charId).then(acts => acts.map(a => ({ ...a, _type: 'dungeon', _characterId: charId }))),
+        fetchAllPages(2, charId).then(acts => acts.map(a => ({ ...a, _type: 'story', _characterId: charId }))),
+      );
+    }
 
-      // Fetch raids
-      showStatus(`Scanning raids for ${className}...`, 'info', true);
-      const raids = await fetchAllPages(4, charId);
-      raids.forEach(a => {
-        if (seen.has(a.activityDetails.instanceId)) return;
+    const results = await Promise.all(fetchTasks);
+    const seen = new Set();
+    const allActivities = [];
+    for (const batch of results) {
+      for (const a of batch) {
+        if (seen.has(a.activityDetails.instanceId)) continue;
         seen.add(a.activityDetails.instanceId);
-        a._type = 'raid';
-        a._characterId = charId;
         allActivities.push(a);
-      });
-
-      // Fetch dungeons
-      showStatus(`Scanning dungeons for ${className}...`, 'info', true);
-      const dungeons = await fetchAllPages(82, charId);
-      dungeons.forEach(a => {
-        if (seen.has(a.activityDetails.instanceId)) return;
-        seen.add(a.activityDetails.instanceId);
-        a._type = 'dungeon';
-        a._characterId = charId;
-        allActivities.push(a);
-      });
-
-      // Fetch story missions
-      showStatus(`Scanning story missions for ${className}...`, 'info', true);
-      const stories = await fetchAllPages(2, charId);
-      stories.forEach(a => {
-        if (seen.has(a.activityDetails.instanceId)) return;
-        seen.add(a.activityDetails.instanceId);
-        a._type = 'story';
-        a._characterId = charId;
-        allActivities.push(a);
-      });
+      }
     }
 
     if (!allActivities.length) {
@@ -386,7 +368,7 @@ async function loadJourney(player) {
 
     // ── Fetch completed titles (Seals) ────────────────────────────────────
     showStatus('Checking titles...', 'info', true);
-    const titleMilestones = await fetchTitles();
+    const titleMilestones = fetchTitlesFromProfile(profileData);
     state.titles = titleMilestones;
 
     // Update summary
@@ -428,23 +410,41 @@ async function loadJourney(player) {
 async function fetchAllPages(mode, charId) {
   const all = [];
   let page = 0;
-  while (true) {
-    const data = await apiFetch(
-      `/Destiny2/${state.membershipType}/Account/${state.membershipId}/Character/${charId}/Stats/Activities/` +
-      `?count=250&mode=${mode}&page=${page}`
-    );
+
+  // Fetch first page to determine if there are more
+  const firstData = await apiFetch(
+    `/Destiny2/${state.membershipType}/Account/${state.membershipId}/Character/${charId}/Stats/Activities/` +
+    `?count=250&mode=${mode}&page=0`
+  );
+  if (firstData.ErrorCode !== 1) return all;
+  const firstActs = firstData.Response?.activities || [];
+  all.push(...firstActs);
+  if (firstActs.length < 250) return all;
+
+  // More pages exist — fetch up to 7 more in parallel (max ~2000 activities per mode)
+  const remainingPages = [1, 2, 3, 4, 5, 6, 7];
+  const results = await Promise.all(
+    remainingPages.map(p =>
+      apiFetch(
+        `/Destiny2/${state.membershipType}/Account/${state.membershipId}/Character/${charId}/Stats/Activities/` +
+        `?count=250&mode=${mode}&page=${p}`
+      )
+    )
+  );
+
+  for (const data of results) {
     if (data.ErrorCode !== 1) break;
     const acts = data.Response?.activities || [];
     all.push(...acts);
     if (acts.length < 250) break;
-    page++;
   }
+
   return all;
 }
 
 async function resolveNames(hashes) {
-  for (let i = 0; i < hashes.length; i += 8) {
-    const batch = hashes.slice(i, i + 8).filter(h => !nameCache[h]);
+  for (let i = 0; i < hashes.length; i += 16) {
+    const batch = hashes.slice(i, i + 16).filter(h => !nameCache[h]);
     if (!batch.length) continue;
     showStatus(`Resolving activity names (${i + batch.length} / ${hashes.length})...`, 'info', true);
     await Promise.all(batch.map(async hash => {
@@ -471,54 +471,29 @@ async function prefetchFireteams(milestones) {
 }
 
 // ── Title fetching ─────────────────────────────────────────────────────────
-// Fetches completed Seals/Titles via Profile components 900 (records) and
-// cross-references with the TITLE_FLAVOUR map to find earned titles.
-// Each title becomes a special "title" type milestone.
+// Extracts completed Seals/Titles from an already-fetched profile response
+// (components=900). No additional API calls needed.
 
-async function fetchTitles() {
+function fetchTitlesFromProfile(profileData) {
   const titles = [];
   try {
-    // Component 900 = profileRecords (includes seal/title completion data)
-    const data = await apiFetch(
-      `/Destiny2/${state.membershipType}/Profile/${state.membershipId}/?components=900`
-    );
-    if (data.ErrorCode !== 1) return titles;
+    const recordSeals = profileData.Response?.profileRecords?.data?.recordSeals || {};
 
-    const records = data.Response?.profileRecords?.data?.records || {};
-    const recordSeals = data.Response?.profileRecords?.data?.recordSeals || {};
-
-    // recordSeals contains seal completion info keyed by seal hash
-    // Each seal has a "title" property with the display name when completed
     for (const [sealHash, sealData] of Object.entries(recordSeals)) {
       if (!sealData.completed) continue;
 
-      // Get the title name from the seal definition
       let titleName = sealData.title || '';
-      if (!titleName) {
-        // Fallback: try to resolve from the manifest
-        try {
-          const defData = await apiFetch(`/Destiny2/Manifest/DestinyPresentationNodeDefinition/${sealHash}/`);
-          if (defData.ErrorCode === 1 && defData.Response?.displayProperties?.name) {
-            titleName = defData.Response.displayProperties.name;
-          }
-        } catch { /* skip */ }
-      }
-
       if (!titleName) continue;
 
-      // Check if we have flavour text for this title
       const flavour = TITLE_FLAVOUR[titleName] || null;
-      if (!flavour) continue; // only include titles we have flavour for
-
-      // Use the completion date if available, otherwise use the seal hash as a stable key
-      const completedDate = sealData.completedDate || sealData.state === 1 ? new Date().toISOString() : null;
+      if (!flavour) continue;
 
       titles.push({
         refId: `title-${sealHash}`,
         name: titleName,
         type: 'title',
         instanceId: `title-${sealHash}`,
-        period: completedDate || new Date().toISOString(),
+        period: sealData.completedDate || new Date().toISOString(),
         values: {},
         characterId: null,
         starred: true,
@@ -527,7 +502,7 @@ async function fetchTitles() {
       });
     }
   } catch (e) {
-    console.warn('Title fetch error:', e);
+    console.warn('Title parse error:', e);
   }
   return titles;
 }

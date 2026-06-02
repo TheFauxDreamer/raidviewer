@@ -29,6 +29,7 @@ let state = {
   titles: [],            // completed title milestones
   currentSlide: 0,
   currentView: 'timeline',
+  sortOrder: 'played',   // 'played' or 'release'
 };
 
 // Name cache: hash → string
@@ -64,6 +65,65 @@ function toggleTheme() {
 
 // Call on load
 initTheme();
+
+// ── Settings ───────────────────────────────────────────────────────────────
+function openSettings() {
+  document.getElementById('settingsModal').style.display = 'flex';
+  document.getElementById('sortOrderSelect').value = state.sortOrder;
+}
+
+function closeSettings(event) {
+  if (event && event.target !== document.getElementById('settingsModal')) return;
+  document.getElementById('settingsModal').style.display = 'none';
+}
+
+function setSortOrder(value) {
+  state.sortOrder = value;
+  localStorage.setItem('starChart_sortOrder', value);
+  document.getElementById('settingsModal').style.display = 'none';
+  if (state.milestones.length || state.titles.length) {
+    renderTimeline();
+  }
+}
+
+// Restore sort order on load
+(function initSortOrder() {
+  const saved = localStorage.getItem('starChart_sortOrder');
+  if (saved === 'release') {
+    state.sortOrder = 'release';
+  }
+})();
+
+// ── Sort helpers ───────────────────────────────────────────────────────────
+
+// Build a release-order index: mission name → position (lower = earlier)
+const _releaseOrderIndex = {};
+(function buildReleaseOrder() {
+  let pos = 0;
+  for (const ch of MILESTONE_CHAPTERS) {
+    for (const name of ch.missions) {
+      _releaseOrderIndex[name] = pos++;
+    }
+  }
+})();
+
+function getReleaseOrder(name) {
+  return _releaseOrderIndex[name] !== undefined ? _releaseOrderIndex[name] : 99999;
+}
+
+function sortMilestones(items) {
+  if (state.sortOrder === 'release') {
+    // Sort by release order (chapter + position), then by date as tiebreaker
+    return [...items].sort((a, b) => {
+      const aOrder = getReleaseOrder(a.name);
+      const bOrder = getReleaseOrder(b.name);
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return new Date(a.period) - new Date(b.period);
+    });
+  }
+  // Played order: chronological
+  return [...items].sort((a, b) => new Date(a.period) - new Date(b.period));
+}
 
 function isActualClear(values) {
   const completed = (values?.completed?.basic?.value ?? 0) === 1;
@@ -556,9 +616,8 @@ function renderTimeline() {
   container.style.display = 'block';
   container.innerHTML = '';
 
-  // Combine milestones and titles, sorted by date
-  const allItems = [...state.milestones, ...state.titles]
-    .sort((a, b) => new Date(a.period) - new Date(b.period));
+  // Combine milestones and titles, sorted by chosen order
+  const allItems = sortMilestones([...state.milestones, ...state.titles]);
 
   if (!allItems.length) {
     container.innerHTML = '<div class="empty-state"><div class="icon">◈</div><p>No milestones found</p></div>';

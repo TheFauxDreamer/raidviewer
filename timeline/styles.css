@@ -1086,3 +1086,93 @@ button.small {
   .fireteam-member { grid-template-columns: 1fr repeat(2, auto); }
   .member-stat:nth-child(3) { display: none; }
 }
+
+/* ── Settings modal ────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.15s ease;
+}
+
+.modal-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  width: 90%;
+  max-width: 420px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--star);
+}
+
+.modal-close {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.setting-label {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.setting-row select {
+  background: var(--void);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 12px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.setting-row select:focus {
+  border-color: var(--blue);
+}

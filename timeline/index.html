@@ -31,6 +31,9 @@
       <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle light/dark mode">
         ☀
       </button>
+      <button class="theme-toggle" id="settingsBtn" onclick="openSettings()" title="Settings" style="right:48px;">
+        ⚙
+      </button>
     </header>
 
     <!-- ── Search ────────────────────────────────────────────────────────── -->
@@ -119,6 +122,25 @@
     <div class="empty-state" id="emptyState">
       <div class="icon">◈</div>
       <p>Search for a guardian to chart their journey</p>
+    </div>
+
+    <!-- ── Settings Modal ────────────────────────────────────────────────── -->
+    <div class="modal-overlay" id="settingsModal" style="display:none;" onclick="closeSettings(event)">
+      <div class="modal-panel" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <span>Settings</span>
+          <button class="modal-close" onclick="closeSettings()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="setting-row">
+            <div class="setting-label">Sort Order</div>
+            <select id="sortOrderSelect" onchange="setSortOrder(this.value)">
+              <option value="played">Played Order</option>
+              <option value="release">Release Order</option>
+            </select>
+          </div>
+        </div>
+      </div>
     </div>
 
   </div>

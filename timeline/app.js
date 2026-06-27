@@ -173,6 +173,11 @@ function isImportantStory(name, refId) {
   return false;
 }
 
+// ── Exotic missions (from milestones.js) ──────────────────────────────────
+function isExoticMission(name) {
+  return EXOTIC_MISSION_NAMES.has(name);
+}
+
 // ── Search ─────────────────────────────────────────────────────────────────
 
 async function search() {
@@ -389,21 +394,24 @@ async function loadJourney(player) {
       if (!name || name === 'Unknown Activity') continue;
 
       const isImportant = isImportantStory(name, refId);
+      const isExotic = isExoticMission(name);
 
-      // Always include raids and dungeons. Story missions must be in the
-      // IMPORTANT_STORY_MISSIONS set — this is about the first time you
-      // played through the game, not every replay.
-      if (act._type === 'story' && !isImportant) continue;
+      // Always include raids, dungeons, and exotic missions. Story missions
+      // must be in the IMPORTANT_STORY_MISSIONS set.
+      if (act._type === 'story' && !isImportant && !isExotic) continue;
+
+      // Exotic missions get their own type for distinct styling
+      const type = isExotic ? 'exotic' : act._type;
 
       milestones.push({
         refId,
         name,
-        type: act._type,
+        type,
         instanceId: act.activityDetails.instanceId,
         period: act.period,
         values: act.values || {},
         characterId: act._characterId,
-        starred: isImportant,
+        starred: isImportant && !isExotic,
         artwork: getArtwork(name),
         flavour: getFlavour(name),
       });
@@ -754,6 +762,9 @@ function renderTimeline() {
     if (isTitle) {
       typeLabel = 'Title';
       typeClassLabel = 'title';
+    } else if (m.type === 'exotic') {
+      typeLabel = 'Exotic';
+      typeClassLabel = 'exotic';
     } else {
       typeLabel = m.type === 'raid' ? 'Raid' : m.type === 'dungeon' ? 'Dungeon' : 'Story';
       typeClassLabel = m.starred ? 'important' : m.type;
@@ -893,8 +904,8 @@ function renderSlide(index) {
   const dateStr = period.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
   const timeStr = period.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 
-  const typeLabel = m.type === 'raid' ? 'Raid' : m.type === 'dungeon' ? 'Dungeon' : 'Story';
-  const typeClassLabel = m.starred ? 'important' : m.type;
+  const typeLabel = m.type === 'raid' ? 'Raid' : m.type === 'dungeon' ? 'Dungeon' : m.type === 'exotic' ? 'Exotic' : 'Story';
+  const typeClassLabel = m.type === 'exotic' ? 'exotic' : (m.starred ? 'important' : m.type);
 
   const kills = Math.round(m.values?.kills?.basic?.value || 0);
   const deaths = Math.round(m.values?.deaths?.basic?.value || 0);

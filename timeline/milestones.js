@@ -285,6 +285,41 @@ const IMPORTANT_STORY_MISSIONS = new Set([
 ]);
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   Exotic Missions
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Exotic missions are special story missions that reward an Exotic weapon.
+   They are styled differently from regular story missions — with their own
+   colour and badge — and are always included in the timeline.
+
+   Matched by display name from the Bungie manifest.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const EXOTIC_MISSION_NAMES = new Set([
+  // Year 2 — Forsaken
+  'The Whisper',
+  'Zero Hour',
+  // Year 3 — Shadowkeep
+  'The Other Side',
+  // Year 4 — Beyond Light
+  'Presage',
+  'Harbinger',
+  // Year 5 — The Witch Queen
+  'Vox Obscura',
+  'Operation: Seraph\'s Shield',
+  // Year 6 — Lightfall
+  '//node.ovrd.AVALON//',
+  'Avalon',
+  'Starcrossed',
+  // Year 7 — The Final Shape
+  'Encore',
+  'Kell\'s Fall',
+  // Year 8 — The Edge of Fate
+  'Mission: Morphology',
+  'Mission: Criticality',
+]);
+
+/* ═══════════════════════════════════════════════════════════════════════════
    Milestone Flavour Text
    ═══════════════════════════════════════════════════════════════════════════
 
@@ -566,6 +601,24 @@ const MILESTONE_FLAVOUR = {
   'Appellation': 'You were given a new name. The Hive would remember it.',
   'Resile': 'You bounced back from the brink. Resilience is the Guardian\'s greatest weapon.',
 
+  // ═══════════════════════════════════════════════════════════════════════
+  // Exotic Missions
+  // ═══════════════════════════════════════════════════════════════════════
+  'The Whisper': 'You heard the Whisper on Io. Xol called — and you answered. The Taken answered to you now.',
+  'Zero Hour': 'You raced through the old Tower. Time was running out — but you were faster. Outbreak Perfected.',
+  'The Other Side': 'You walked the Other Side. The Drifter\'s secrets were laid bare.',
+  'Presage': 'You boarded the Glykon. What happened to Katabasis was a warning — and you survived it.',
+  'Harbinger': 'You followed the Hawkmoon\'s call. The Traveler\'s shards still sang.',
+  'Vox Obscura': 'You breached the Psion bunker on Mars. Caiatl\'s enemies learned to fear your voice.',
+  'Operation: Seraph\'s Shield': 'You infiltrated the Seraph Station. Rasputin\'s secrets were worth the risk.',
+  '//node.ovrd.AVALON//': 'You overrode the Vex network. Avalon was yours to command.',
+  'Avalon': 'You conquered the Vex domain. The network bent to your will.',
+  'Starcrossed': 'You walked the star-crossed path. The Ahamkara\'s wish was fulfilled.',
+  'Encore': 'You gave an encore performance. The Echoes would remember.',
+  'Kell\'s Fall': 'You witnessed the fall of a Kell. Even the mighty can stumble.',
+  'Mission: Morphology': 'You witnessed the reshaping of matter and meaning at the edge of known space.',
+  'Mission: Criticality': 'You reached the tipping point. One more push would change everything.',
+
 };
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -730,9 +783,39 @@ const MILESTONE_CHAPTERS = [
     ],
     children: [
       {
+        id: 'outlaw',
+        label: 'Outlaw',
+        missions: [],
+      },
+      {
         id: 'forge',
         label: 'Forge',
         missions: ['Scourge of the Armory', 'Origin: Nessus', 'Rekindle the Flames', 'Niobe\'s Torment'],
+      },
+      {
+        id: 'drifter',
+        label: 'Drifter',
+        missions: [],
+      },
+      {
+        id: 'opulence',
+        label: 'Opulence',
+        missions: [],
+      },
+    ],
+  },
+  {
+    id: 'shadowkeep',
+    label: 'Shadowkeep',
+    missions: [
+      'A Mysterious Disturbance', 'In Search of Answers',
+      'The Scarlet Keep', 'In the Deep', 'Beyond',
+    ],
+    children: [
+      {
+        id: 'undying',
+        label: 'Undying',
+        missions: [],
       },
       {
         id: 'dawn',
@@ -755,21 +838,6 @@ const MILESTONE_CHAPTERS = [
     ],
   },
   {
-    id: 'shadowkeep',
-    label: 'Shadowkeep',
-    missions: [
-      'A Mysterious Disturbance', 'In Search of Answers',
-      'The Scarlet Keep', 'In the Deep', 'Beyond',
-    ],
-    children: [
-      {
-        id: 'hunt',
-        label: 'Hunt',
-        missions: ['Trail of the Hunted', 'Cry from Beyond', 'The Crow and the Hawk', 'Coup de Grâce'],
-      },
-    ],
-  },
-  {
     id: 'beyond-light',
     label: 'Beyond Light',
     missions: [
@@ -779,6 +847,11 @@ const MILESTONE_CHAPTERS = [
       'The Dark Priestess',
     ],
     children: [
+      {
+        id: 'hunt',
+        label: 'Hunt',
+        missions: ['Trail of the Hunted', 'Cry from Beyond', 'The Crow and the Hawk', 'Coup de Grâce'],
+      },
       {
         id: 'chosen',
         label: 'Chosen',
@@ -815,6 +888,11 @@ const MILESTONE_CHAPTERS = [
       'Preservation',
     ],
     children: [
+      {
+        id: 'risen',
+        label: 'Risen',
+        missions: [],
+      },
       {
         id: 'haunted',
         label: 'Haunted',
@@ -911,11 +989,6 @@ const MILESTONE_CHAPTERS = [
         label: 'Heresy',
         missions: ['Espial', 'Recce', 'Kludge', 'Renascence', 'Mission Captis', 'Appellation', 'Resile'],
       },
-      {
-        id: 'reclamation',
-        label: 'Reclamation',
-        missions: ['Ash & Iron: Initialize'],
-      },
     ],
   },
   {
@@ -926,6 +999,28 @@ const MILESTONE_CHAPTERS = [
       'Gouge', 'Mission: Fallow', 'Mission: Nostos', 'Commencement',
       'Mission: Morphology', 'Charge', 'Mission: Disruption',
       'Mission: Calculus', 'Quarantine', 'Mission: Criticality', 'The Message',
+    ],
+    children: [
+      {
+        id: 'reclamation',
+        label: 'Reclamation',
+        missions: ['Ash & Iron: Initialize'],
+      },
+      {
+        id: 'ash-and-iron',
+        label: 'Ash & Iron',
+        missions: [],
+      },
+      {
+        id: 'lawless',
+        label: 'Lawless',
+        missions: [],
+      },
+      {
+        id: 'shadow-order',
+        label: 'Shadow & Order',
+        missions: [],
+      },
     ],
   },
   {
